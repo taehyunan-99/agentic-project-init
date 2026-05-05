@@ -1,6 +1,8 @@
 # Agentic Project Init
 
-> AI 에이전틱 작업(Claude Code · Codex · Antigravity · Cursor)에 최적화된 프로젝트 구조를 자동으로 초기화하는 스킬입니다.
+AI 에이전틱 작업에 최적화된 프로젝트 구조를 자동으로 초기화하는 스킬입니다.
+
+> 적용 가능 에이전트: Claude Code · Codex · Antigravity · Cursor
 
 <br/><br/>
 
