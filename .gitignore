@@ -1,0 +1,17 @@
+# Design 문서·plan은 작업용 (commit 안 함)
+docs/
+
+# OS 메타파일
+Thumbs.db
+.DS_Store
+
+# 임시 폴더
+/tmp/
+*.tmp
+*.bak
+*.bak.*
+
+# 에디터
+.vscode/
+.idea/
+*.swp
