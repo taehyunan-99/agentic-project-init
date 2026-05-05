@@ -124,12 +124,12 @@ Codex / Antigravity / Cursor는 **`.agents/` 오픈 표준**을 공통으로 인
 
 **Linux / macOS**:
 ```bash
-git clone https://github.com/anxogus817/agentic-project-init /tmp/api && cp -r /tmp/api/skill ~/.claude/skills/agentic-project-init && rm -rf /tmp/api
+git clone https://github.com/taehyunan-99/agentic-project-init /tmp/api && cp -r /tmp/api/skill ~/.claude/skills/agentic-project-init && rm -rf /tmp/api
 ```
 
 **Windows (PowerShell)**:
 ```powershell
-git clone https://github.com/anxogus817/agentic-project-init $env:TEMP\api; Copy-Item -Recurse $env:TEMP\api\skill "$env:USERPROFILE\.claude\skills\agentic-project-init"; Remove-Item -Recurse -Force $env:TEMP\api
+git clone https://github.com/taehyunan-99/agentic-project-init $env:TEMP\api; Copy-Item -Recurse $env:TEMP\api\skill "$env:USERPROFILE\.claude\skills\agentic-project-init"; Remove-Item -Recurse -Force $env:TEMP\api
 ```
 
 ### Codex / Antigravity / Cursor (project-level — 해당 프로젝트에서만)
@@ -138,12 +138,12 @@ git clone https://github.com/anxogus817/agentic-project-init $env:TEMP\api; Copy
 
 **Linux / macOS**:
 ```bash
-git clone https://github.com/anxogus817/agentic-project-init /tmp/api && mkdir -p .agents/skills && cp -r /tmp/api/skill .agents/skills/agentic-project-init && rm -rf /tmp/api
+git clone https://github.com/taehyunan-99/agentic-project-init /tmp/api && mkdir -p .agents/skills && cp -r /tmp/api/skill .agents/skills/agentic-project-init && rm -rf /tmp/api
 ```
 
 **Windows (PowerShell)**:
 ```powershell
-git clone https://github.com/anxogus817/agentic-project-init $env:TEMP\api; New-Item -ItemType Directory -Force .agents\skills; Copy-Item -Recurse $env:TEMP\api\skill .agents\skills\agentic-project-init; Remove-Item -Recurse -Force $env:TEMP\api
+git clone https://github.com/taehyunan-99/agentic-project-init $env:TEMP\api; New-Item -ItemType Directory -Force .agents\skills; Copy-Item -Recurse $env:TEMP\api\skill .agents\skills\agentic-project-init; Remove-Item -Recurse -Force $env:TEMP\api
 ```
 
 ### Codex / Cursor (user-level — 모든 프로젝트)
