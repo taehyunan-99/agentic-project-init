@@ -204,6 +204,3 @@ git clone https://github.com/taehyunan-99/agentic-project-init $env:TEMP\api; Ne
 
 `.agents/` 표준만 인식하면 별도 작업 없이 동작합니다. 자체 표준이 있는 에이전트라면 issue로 알려주세요.
 
-## 라이선스
-
-MIT License — `LICENSE` 파일 참고.
