@@ -246,8 +246,3 @@ git clone https://github.com/taehyunan-99/agentic-project-init $env:TEMP\api; Ne
 **Q. /learn은 어떻게 동작하나요?**
 
 현재 작업 영역을 추론해 그 영역 가이드의 "⚠️ LEARNED CAUTIONS" 섹션에 한 줄 추가합니다. 영역이 모호하면 사용자에게 확인합니다.
-
-**Q. 다른 에이전트를 추가 지원하려면?**
-
-`.agents/` 표준만 인식하면 별도 작업 없이 동작합니다. 자체 표준이 있는 에이전트라면 issue로 알려주세요.
-
