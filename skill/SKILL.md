@@ -182,10 +182,14 @@ _(아직 없음)_
 
 **영역별 가이드 파일** — 각 영역 폴더에 동일하게 생성.
 
-**`/learn` 커맨드** — `assets/learn-command.md`의 내용을 다음 위치에 복사:
-- CLAUDE 모드: `.claude/commands/learn.md`
-- agents 모드: `.agents/workflows/learn.md`
-- Both 모드: 양쪽 모두 (`.claude/commands/learn.md` + `.agents/workflows/learn.md`)
+**`learn` 스킬** — `assets/learn-skill/` 디렉터리 전체를 다음 위치에 복사:
+- CLAUDE 모드: `.claude/skills/learn/`
+- agents 모드: `.agents/skills/learn/` + `.agents/workflows/learn.md` (`assets/learn-workflow.md`에서 복사)
+- Both 모드: 위 두 경로 모두
+
+호출 방식:
+- Claude Code/Cursor/Antigravity: `/learn <메모>` 또는 `/learn`
+- Codex: `$learn <메모>` 또는 `$learn`
 
 폴더가 없으면 생성한다.
 
