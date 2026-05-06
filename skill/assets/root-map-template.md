@@ -33,10 +33,11 @@
 6. **WHY** — 코드에 안 적힌 배경 지식
 7. **LEARNED CAUTIONS** — `/learn`으로 누적
 
-## 주의사항 학습 (`/learn`)
+## 주의사항 학습 (learn 스킬)
 
-작업 중 실수가 발생하면 `/learn [메모]`로 해당 영역 {GUIDE_FILENAME}의 "⚠️ LEARNED CAUTIONS" 섹션에 누적한다.
+작업 중 실수가 발견되면 다음 형태로 호출해 해당 영역 {GUIDE_FILENAME}의 "⚠️ LEARNED CAUTIONS" 섹션에 누적한다.
 
-- 인자 없이 호출하면 최근 대화에서 자동 추론
-- 인자가 있으면 그 내용을 추가
-- 커맨드 위치: {LEARN_COMMAND_PATH}
+- Claude Code/Cursor/Antigravity: `/learn <메모>` (인자 없이도 호출 가능)
+- Codex: `$learn <메모>`
+
+스킬 위치: {LEARN_SKILL_PATH}
