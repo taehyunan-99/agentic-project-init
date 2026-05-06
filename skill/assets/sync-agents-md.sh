@@ -20,22 +20,17 @@ file_is_staged() {
     git diff --cached --name-only 2>/dev/null | grep -qxF "$file"
 }
 
-CONFLICT_FOUND=0
-
-for DIR in "${DIRS[@]}"; do
-    if [[ -z "$DIR" ]]; then
-        CLAUDE="CLAUDE.md"
-        AGENTS="AGENTS.md"
-        LABEL="root"
-    else
-        CLAUDE="$DIR/CLAUDE.md"
-        AGENTS="$DIR/AGENTS.md"
-        LABEL="$DIR"
-    fi
+# 두 파일 한 쌍을 sync 처리한다.
+# 인자: $1=CLAUDE 경로, $2=AGENTS 경로, $3=LABEL(에러 메시지용)
+# 외부 변수: CONFLICT_FOUND (충돌 시 1로 set)
+sync_pair() {
+    local CLAUDE="$1"
+    local AGENTS="$2"
+    local LABEL="$3"
 
     # 둘 다 없으면 건너뜀
     if [[ ! -f "$CLAUDE" && ! -f "$AGENTS" ]]; then
-        continue
+        return 0
     fi
 
     # 한쪽 누락 처리: 존재하는 쪽으로 복원 + git add
@@ -43,19 +38,19 @@ for DIR in "${DIRS[@]}"; do
         echo "[SYNC] $LABEL: CLAUDE.md 누락 → AGENTS.md에서 복원"
         cp "$AGENTS" "$CLAUDE"
         git add "$CLAUDE"
-        continue
+        return 0
     fi
 
     if [[ -f "$CLAUDE" && ! -f "$AGENTS" ]]; then
         echo "[SYNC] $LABEL: AGENTS.md 누락 → CLAUDE.md에서 복원"
         cp "$CLAUDE" "$AGENTS"
         git add "$AGENTS"
-        continue
+        return 0
     fi
 
     # 이하 둘 다 존재
-    CLAUDE_STAGED=0
-    AGENTS_STAGED=0
+    local CLAUDE_STAGED=0
+    local AGENTS_STAGED=0
     file_is_staged "$CLAUDE" && CLAUDE_STAGED=1 || true
     file_is_staged "$AGENTS" && AGENTS_STAGED=1 || true
 
@@ -64,7 +59,7 @@ for DIR in "${DIRS[@]}"; do
         echo "[SYNC] $LABEL: CLAUDE.md staged → AGENTS.md 동기화"
         cp "$CLAUDE" "$AGENTS"
         git add "$AGENTS"
-        continue
+        return 0
     fi
 
     # Case B: AGENTS.md만 staged → AGENTS.md → CLAUDE.md
@@ -72,7 +67,7 @@ for DIR in "${DIRS[@]}"; do
         echo "[SYNC] $LABEL: AGENTS.md staged → CLAUDE.md 동기화"
         cp "$AGENTS" "$CLAUDE"
         git add "$CLAUDE"
-        continue
+        return 0
     fi
 
     # Case C: 둘 다 staged + 내용 다름 → 충돌
@@ -99,7 +94,7 @@ for DIR in "${DIRS[@]}"; do
         else
             echo "[SYNC] $LABEL: 둘 다 staged, 내용 동일 → OK"
         fi
-        continue
+        return 0
     fi
 
     # Case D: 둘 다 unstaged + 내용 다름 → 충돌
@@ -117,10 +112,23 @@ for DIR in "${DIRS[@]}"; do
             echo ""
             CONFLICT_FOUND=1
         fi
-        continue
+        return 0
     fi
+}
 
+CONFLICT_FOUND=0
+
+# 영역별 root map / area guide sync
+for DIR in "${DIRS[@]}"; do
+    if [[ -z "$DIR" ]]; then
+        sync_pair "CLAUDE.md" "AGENTS.md" "root"
+    else
+        sync_pair "$DIR/CLAUDE.md" "$DIR/AGENTS.md" "$DIR"
+    fi
 done
+
+# learn 스킬 sync (both 모드 자동 처리)
+sync_pair ".claude/skills/learn/SKILL.md" ".agents/skills/learn/SKILL.md" "learn-skill"
 
 if [[ $CONFLICT_FOUND -eq 1 ]]; then
     exit 1
