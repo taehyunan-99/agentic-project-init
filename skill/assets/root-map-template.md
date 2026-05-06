@@ -31,7 +31,7 @@
 4. **HOW NOT** — 시스템을 깨뜨리는 비명백한 함정
 5. **WHERE** — 다른 모듈과의 의존성
 6. **WHY** — 코드에 안 적힌 배경 지식
-7. **LEARNED CAUTIONS** — `/learn`으로 누적
+7. **LEARNED CAUTIONS** — `learn` 스킬로 누적
 
 ## 주의사항 학습 (learn 스킬)
 
