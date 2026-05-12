@@ -38,8 +38,13 @@
 - {함정} — {왜 안 되는지}
 
 ## 5. WHERE — 다른 모듈과의 의존성
-- **의존**: {이 영역이 import/호출하는 곳}
-- **피의존**: {이 영역을 import/호출하는 곳}
+<!--
+다른 영역 가이드를 가리킬 때는 반드시 마크다운 링크로 적는다.
+예: [`apps/backend/CLAUDE.md`](../backend/CLAUDE.md) — 변경 영향 추적 + 에이전트가 cross-reference로 따라갈 수 있게.
+-->
+
+- **의존**: {예: [`apps/backend/CLAUDE.md`](../backend/CLAUDE.md)의 `/api/users` 엔드포인트}
+- **피의존**: {예: [`apps/admin/CLAUDE.md`](../admin/CLAUDE.md)의 권한 체크 미들웨어}
 - **경계 / 어댑터**: {외부 시스템·다른 영역과 닿는 지점, 컨트랙트 위치}
 
 ## 6. WHY — 코드에 안 적힌 배경 지식
@@ -73,3 +78,12 @@
 <!-- `learn` 스킬(`/learn` 또는 Codex의 `$learn`)로 누적되는 영역. -->
 
 _(아직 없음)_
+
+<!--
+== 분할 안내 ==
+이 파일이 100줄을 넘기 시작하면 영상 권고에 따라 토픽별 파일로 분할한다.
+예: 컨벤션이 길어졌다면 `@./conventions.md`, 도메인 용어가 많아졌다면 `@./glossary.md`로 빼고
+이 파일에서 `@./conventions.md` 한 줄로 import. Claude는 import된 파일을 자동으로 따라간다.
+분할 후에도 본문이 100줄 이하로 유지되면 D3 + D4 양쪽 만점.
+-->
+

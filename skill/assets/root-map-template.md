@@ -62,3 +62,12 @@ root에 모든 가이드를 몰아넣지 않고 영역별로 분리한 이유는
 - Codex: `$learn <메모>`
 
 스킬 위치: {LEARN_SKILL_PATH}
+
+<!--
+== 분할 안내 ==
+이 root map이 100줄을 넘기 시작하면 토픽별 파일로 분할한다.
+예: 영역 수가 많아 라우팅 섹션이 비대해지면 영역 카테고리별로 묶어 `@./areas-frontend.md`,
+`@./areas-backend.md`로 빼거나, 공통 규칙이 많아지면 `@./shared-conventions.md`로 분리.
+Claude는 import된 파일을 자동으로 따라간다.
+-->
+
