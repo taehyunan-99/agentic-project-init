@@ -1,4 +1,4 @@
-# Agentic Project Init — 가이드 파일 품질 루브릭 v1.2
+# Agentic Project Init — 가이드 파일 품질 루브릭 v1.3
 
 > AI 에이전트용 가이드 파일(`CLAUDE.md` / `AGENTS.md` / 영역 가이드)의 품질을
 > 100점 만점으로 평가하는 내부 기준서.
@@ -111,9 +111,21 @@ project_score = weighted_avg(file_scores) - tree_penalty
 - 만점(3): 영역별 가이드 섹션 + 모든 영역 가이드 파일로의 상대경로 링크.
 - 부분(1): 일부 링크. 0점: 없음.
 
-### D2'. 7섹션 템플릿 준수 (3점) — applies_to: 2
-- 만점(3): WHAT/CONTENTS/HOW/HOW NOT/WHERE/WHY/LEARNED CAUTIONS 중 6개 이상.
+### D2'. 8섹션 템플릿 준수 (3점) — applies_to: 2 ⭐ v1.3 확장
+- 만점(3): 8섹션 중 6개 이상 매칭.
 - 부분(1): 4~5개. 0점: 3개 이하.
+- *v1.3 변경*: 영어 키워드만 매칭하던 동작을 **영어/한국어 aliases 매칭**으로 확장. 자생 한국어 가이드도 정상 인정.
+
+| canonical | aliases (헤딩에 포함되면 매칭) |
+|---|---|
+| WHAT | WHAT, 역할, What |
+| CONTENTS | CONTENTS, 포함 내용, 구성, 현재 스펙, Contents, 내용 |
+| HOW | HOW, 수정 방법, 작업 방법, How, 어떻게 |
+| HOW NOT | HOW NOT, 금지, 금지 사항, 주의사항, ⛔, Don't, Never |
+| WHERE | WHERE, 의존성, 경계, 다른 영역, Where, Boundaries |
+| WHY | WHY, 배경, 이유, 맥락, Why, Context, Background |
+| COMMANDS | COMMANDS, 명령어, 빌드, Commands, Build |
+| LEARNED CAUTIONS | LEARNED CAUTIONS, 학습된 주의사항, ⚠️, Lessons, Pitfalls |
 
 ### D3. 길이 (3점) — applies_to: 1, 2, 3
 - 만점(3): **100줄 이하** (영상 권장 그대로).
@@ -187,11 +199,12 @@ project_score = weighted_avg(file_scores) - tree_penalty
 - 0점: 1개 이상 broken.
 - *자동 검출*: 모든 `*.md`의 마크다운 링크 → 파일 존재 + 앵커 매치 확인.
 
-### T3. 규칙 중복 (1점)
+### T3. 규칙 중복 (1점) ⭐ v1.3 sync 쌍 제외
 - 만점(1): 같은 bullet/규칙이 여러 가이드에 반복 등장하지 않음.
 - 0점: 5개 이상 중복.
 - *자동 검출*: 모든 가이드의 bullet 텍스트를 normalize 후 fuzzy match (≥ 0.85 유사도).
 - *권고*: 중복은 root로 끌어올리거나 한 곳만 남기고 제거.
+- *v1.3 제외 룰*: **같은 디렉토리의 `CLAUDE.md` ↔ `AGENTS.md` 쌍 사이 bullet 중복은 카운트하지 않는다.** 그 둘은 sync 의도된 중복이므로 안티패턴이 아님. (`both` 모드 프로젝트가 부당 감점되던 문제 해결)
 
 ---
 

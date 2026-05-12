@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Agentic Project Init - Project-Wide Guide Quality Rubric",
-  "version": "1.2.0",
-  "description": "프로젝트 전체의 모든 CLAUDE.md/AGENTS.md를 발견·분류·채점하고 트리 합산 점수를 산출하는 스키마. references/rubric.md와 1:1 대응. v1.2: 프로젝트 통합 검사 모델, D5(HTML 주석), H3(sync 정합성), T 카테고리(트리 일관성) 신설.",
+  "version": "1.3.0",
+  "description": "프로젝트 전체의 모든 CLAUDE.md/AGENTS.md를 발견·분류·채점하고 트리 합산 점수를 산출하는 스키마. references/rubric.md와 1:1 대응. v1.3: D2_prime 섹션명을 영어/한국어 aliases로 확장, T3 중복 검사에서 같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍을 sync 의도로 보고 제외.",
   "audit_unit": "project_wide",
   "audit_unit_description": "단일 파일이 아니라 프로젝트 내 모든 CLAUDE.md/AGENTS.md를 자동 발견·채점.",
   "discovery": {
@@ -228,12 +228,22 @@
         },
         {
           "id": "D2_prime",
-          "name": "7섹션 템플릿 준수 (영역 가이드용)",
+          "name": "8섹션 템플릿 준수 (영역 가이드용) — 영어/한국어 aliases 허용",
           "max_points": 3,
           "applies_to": [2],
+          "note_v1_3": "v1.3에서 영어 키워드만 매칭하던 동작을 영어/한국어 aliases 매칭으로 확장. 자생 프로젝트의 한국어 헤딩도 정상 인정.",
           "detection": {
             "type": "section_set_match",
-            "required_sections": ["WHAT", "CONTENTS", "HOW", "HOW NOT", "WHERE", "WHY", "LEARNED CAUTIONS"],
+            "required_sections": [
+              {"canonical": "WHAT", "aliases": ["WHAT", "역할", "What"]},
+              {"canonical": "CONTENTS", "aliases": ["CONTENTS", "포함 내용", "구성", "현재 스펙", "Contents", "내용"]},
+              {"canonical": "HOW", "aliases": ["HOW", "수정 방법", "작업 방법", "How", "어떻게"]},
+              {"canonical": "HOW NOT", "aliases": ["HOW NOT", "금지", "금지 사항", "주의사항", "⛔", "Don't", "Never"]},
+              {"canonical": "WHERE", "aliases": ["WHERE", "의존성", "경계", "다른 영역", "Where", "Boundaries"]},
+              {"canonical": "WHY", "aliases": ["WHY", "배경", "이유", "맥락", "Why", "Context", "Background"]},
+              {"canonical": "COMMANDS", "aliases": ["COMMANDS", "명령어", "빌드", "Commands", "Build"]},
+              {"canonical": "LEARNED CAUTIONS", "aliases": ["LEARNED CAUTIONS", "학습된 주의사항", "⚠️", "Lessons", "Pitfalls"]}
+            ],
             "scoring": [
               {"condition": "matched_count >= 6", "points": 3},
               {"condition": "matched_count >= 4", "points": 1},
@@ -444,9 +454,13 @@
         "id": "T3",
         "name": "규칙 중복",
         "max_points": 1,
+        "note_v1_3": "v1.3에서 같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍은 sync 의도된 중복으로 보고 dedup 검사에서 제외. both 모드 프로젝트가 부당하게 감점되던 문제 해결.",
         "detection": {
           "type": "fuzzy_dedup",
           "rule": "모든 가이드의 bullet을 normalize 후 ≥ 0.85 유사도 매치",
+          "exclusions": [
+            {"type": "sync_pair", "description": "같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍 사이 bullet 중복은 카운트하지 않음 (sync 의도)"}
+          ],
           "scoring": [
             {"condition": "duplicate_pairs < 5", "points": 1},
             {"condition": "default", "points": 0}

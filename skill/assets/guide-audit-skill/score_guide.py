@@ -357,22 +357,35 @@ def score_D2(text: str, item: dict, file_path: Path) -> tuple[float, str]:
 
 
 def score_D2_prime(text: str, item: dict) -> tuple[float, str]:
-    """area_guide용 — 8섹션(또는 7섹션) 매칭"""
+    """area_guide용 — 8섹션 매칭 (v1.3: 영어/한국어 aliases 지원)
+
+    스키마의 `required_sections`는 다음 두 포맷 모두 받는다:
+    1. v1.2 이하: ["WHAT", "CONTENTS", ...]   (문자열 리스트)
+    2. v1.3+: [{"canonical": "WHAT", "aliases": ["WHAT", "역할", ...]}, ...]
+    """
     required = item["detection"]["required_sections"]
-    matched = []
-    for kw in required:
-        if re.search(rf"^#+\s*\d?\.?\s*\*?\*?{re.escape(kw)}", text, re.MULTILINE | re.IGNORECASE):
-            matched.append(kw)
-    # 8번째 섹션 COMMANDS도 보너스로 인정
-    has_commands = bool(re.search(r"^#+\s*\d?\.?\s*\*?\*?COMMANDS", text, re.MULTILINE | re.IGNORECASE))
-    if has_commands:
-        matched.append("COMMANDS")
+    headings = re.findall(r"^#+\s+(.+?)\s*$", text, re.MULTILINE)
+    headings_blob = "\n".join(headings)
+
+    matched: list[str] = []
+    for sec in required:
+        if isinstance(sec, dict):
+            canonical = sec["canonical"]
+            aliases = sec.get("aliases", [canonical])
+        else:
+            canonical = sec
+            aliases = [sec]
+        for alias in aliases:
+            if re.search(re.escape(alias), headings_blob, re.IGNORECASE):
+                matched.append(canonical)
+                break
+
     n = len(matched)
     if n >= 6:
         return 3.0, f"섹션 {n}개 매치: {matched}"
     if n >= 4:
-        return 1.0, f"섹션 {n}개 매치 (만점 ≥6)"
-    return 0.0, f"섹션 {n}개 매치"
+        return 1.0, f"섹션 {n}개 매치: {matched} (만점 ≥6)"
+    return 0.0, f"섹션 {n}개 매치: {matched}"
 
 
 def score_D3(text: str, item: dict) -> tuple[float, str]:
@@ -551,26 +564,40 @@ def score_tree(root: Path, files: list[Path], schema: dict) -> TreeResult:
                 broken_links.append(f"{f.relative_to(root)} → {link}")
 
     # T3: 규칙 중복 — 가이드들의 bullet을 normalize → 0.85+ 유사도
-    all_bullets: list[tuple[str, str]] = []  # (file, normalized bullet)
+    # v1.3: 같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍은 sync_group으로 묶고,
+    #       같은 그룹 내 bullet 중복은 카운트하지 않는다.
+    all_bullets: list[tuple[str, str, str]] = []  # (file, sync_group, normalized bullet)
     for f in files:
         text = f.read_text(encoding="utf-8", errors="ignore")
         visible = strip_html_comments(text)
         bullets = re.findall(r"^\s*[-*]\s+(.{15,200})$", visible, re.MULTILINE)
+        # sync_group은 "같은 디렉토리 + 가이드 파일 유형"으로 식별
+        sync_group = str(f.parent.relative_to(root)) if f.parent.is_relative_to(root) else str(f.parent)
         for b in bullets:
             norm = re.sub(r"\s+", " ", b.lower()).strip()
             norm = re.sub(r"[`*_]", "", norm)
-            all_bullets.append((str(f.relative_to(root)), norm))
+            all_bullets.append((str(f.relative_to(root)), sync_group, norm))
 
-    seen: dict[str, list[str]] = {}
-    for path, norm in all_bullets:
-        for existing_norm, paths in list(seen.items()):
-            if jaccard(norm, existing_norm) >= 0.85 and path not in paths:
-                paths.append(path)
-                if len(paths) == 2:
-                    duplicate_rules.append({"rule": existing_norm[:80], "in_files": paths.copy()})
+    # seen: norm → list[(path, sync_group)]
+    seen: dict[str, list[tuple[str, str]]] = {}
+    for path, group, norm in all_bullets:
+        for existing_norm, entries in list(seen.items()):
+            if jaccard(norm, existing_norm) >= 0.85:
+                # sync_group이 모두 같은 그룹이면 중복으로 카운트하지 않음
+                groups_so_far = {g for _, g in entries}
+                groups_so_far.add(group)
+                if len(groups_so_far) >= 2 and (path, group) not in entries:
+                    entries.append((path, group))
+                    if len({p for p, _ in entries}) == 2:
+                        duplicate_rules.append({
+                            "rule": existing_norm[:80],
+                            "in_files": [p for p, _ in entries],
+                        })
+                elif (path, group) not in entries:
+                    entries.append((path, group))
                 break
         else:
-            seen[norm] = [path]
+            seen[norm] = [(path, group)]
 
     t1 = 1.0 if not missing_areas else 0.0
     t2 = 1.0 if not broken_links else 0.0
