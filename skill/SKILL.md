@@ -197,6 +197,11 @@ _(아직 없음)_
 - Claude Code/Cursor/Antigravity: `/learn <메모>` 또는 `/learn`
 - Codex: `$learn <메모>` 또는 `$learn`
 
+**`guide-audit` 스킬** (선택) — `assets/guide-audit-skill/` 디렉터리 전체를 같은 규칙으로 복사한다.
+- 호출: `/guide-audit` (Codex는 `$guide-audit`)
+- 동작: 프로젝트 내 모든 가이드를 v1.2 루브릭(`assets/rubric-schema.json`)으로 채점, 결과는 콘솔에만 출력.
+- 의존성: Python 3.8+ (표준 라이브러리만 사용)
+
 폴더가 없으면 생성한다.
 
 **Both 모드 추가 작업**: `assets/sync-agents-md.sh`와 `assets/pre-commit-hook.sh`를 다음 위치로 복사하고 실행 권한 설정.
