@@ -65,8 +65,12 @@ root에 모든 가이드를 몰아넣지 않고 영역별로 분리한 이유는
 - 린트: `{예: npm run lint:fix}`
 - 타입체크: `{예: tsc --noEmit}`
 
-**명령어 가드**:
+**공통 명령어 가드** (모든 영역에 적용):
+<!-- v1.8: 영역 가이드에는 영역 고유 가드만 두고, 공통 가드는 여기에 모은다. -->
+
 - {예: --no-verify 사용 금지 — pre-commit hook 우회로 broken state commit}
+- {예: production DB 직접 쓰기 금지 — staging 검증 우회}
+- {예: --force push 금지 — 공유 브랜치 히스토리 손실}
 
 ## 주의사항 학습 (learn 스킬)
 

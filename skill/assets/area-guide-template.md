@@ -91,6 +91,11 @@
 이 영역에서 자주 쓰는 명령어. 코드블록 또는 inline code로 명시.
 없으면 LLM이 추측해 잘못된 명령을 시도한다.
 명령어 가드(주의/금지)도 함께 적는다.
+
+== 가드 분리 원칙 (v1.8) ==
+- root map의 "공통 명령어 가드"와 중복되는 가드는 여기에 다시 적지 않는다 (T3 중복 안티패턴).
+- 이 영역에서만 적용되는 가드만 영역 가이드에 둔다.
+- 모호하면 root에 두고 영역에서는 생략한다.
 -->
 
 - 빌드: `{예: npm run build}`
@@ -98,9 +103,9 @@
 - 린트: `{예: npm run lint:fix}`
 - 타입체크: `{예: tsc --noEmit}`
 
-**명령어 가드**:
-- {예: production DB 직접 쓰기 금지 — staging 검증 우회}
-- {예: --no-verify 사용 금지 — pre-commit hook 우회로 broken state commit}
+**영역 고유 명령어 가드**:
+- {예: backend — async 핸들러에서 동기 IO 호출 금지 — 이벤트 루프 블로킹}
+- {예: frontend — watch 모드로 CI 실행 금지 — hang 유발}
 
 ## 8. ⚠️ LEARNED CAUTIONS — 학습된 주의사항
 <!-- `learn` 스킬(`/learn` 또는 Codex의 `$learn`)로 누적되는 영역. -->

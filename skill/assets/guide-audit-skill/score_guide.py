@@ -618,6 +618,25 @@ def score_tree(root: Path, files: list[Path], schema: dict) -> TreeResult:
     # T3: 규칙 중복 — 가이드들의 bullet을 normalize → 0.85+ 유사도
     # v1.3: 같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍은 sync_group으로 묶고,
     #       같은 그룹 내 bullet 중복은 카운트하지 않는다.
+    # v1.8: placeholder 안내문(예: "_(아직 없음)_", "채워주세요" 류)은 진짜 규칙이 아니므로
+    #       T3 dedup에서 사전 제외. 템플릿이 의도적으로 여러 영역에 두는 안내문이 안티패턴으로
+    #       오인되지 않도록 보호.
+    placeholder_markers = [
+        "아직 없음",
+        "채워주세요",
+        "검토 필요",
+        "추정 — 검토",
+        "추정이므로 검토",
+        "비어 있다면",
+        "tbd",
+        "todo",
+        "예:",
+        "있다면 추가",
+        "있다면 채",
+        "필요 시",
+        "도입 시",
+        "_(",  # markdown italic placeholder 시작
+    ]
     all_bullets: list[tuple[str, str, str]] = []  # (file, sync_group, normalized bullet)
     for f in files:
         text = f.read_text(encoding="utf-8", errors="ignore")
@@ -628,6 +647,9 @@ def score_tree(root: Path, files: list[Path], schema: dict) -> TreeResult:
         for b in bullets:
             norm = re.sub(r"\s+", " ", b.lower()).strip()
             norm = re.sub(r"[`*_]", "", norm)
+            # v1.8: placeholder 안내문 제외
+            if any(marker in norm for marker in placeholder_markers):
+                continue
             all_bullets.append((str(f.relative_to(root)), sync_group, norm))
 
     # seen: norm → list[(path, sync_group)]

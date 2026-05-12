@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Agentic Project Init - Project-Wide Guide Quality Rubric",
-  "version": "1.5.0",
-  "description": "프로젝트 전체의 모든 CLAUDE.md/AGENTS.md를 발견·분류·채점하고 트리 합산 점수를 산출하는 스키마. references/rubric.md와 1:1 대응. v1.5: G1 안티패턴에 markdown 디렉토리 트리(코드블록 안의 `├`/`└` 라인 5개 이상) 검출 추가, 그룹별 트리거 임계(자연어=5, 트리=1) 분리. v1.4: `@./AGENTS.md` 같은 import 한 줄짜리 redirect 파일을 인식해 import 대상의 점수를 차용하고 가중 평균에서는 본문 파일만 카운트(중복 방지). v1.3: D2_prime 섹션명을 영어/한국어 aliases로 확장, T3 중복 검사에서 같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍을 sync 의도로 보고 제외.",
+  "version": "1.8.0",
+  "description": "프로젝트 전체의 모든 CLAUDE.md/AGENTS.md를 발견·분류·채점하고 트리 합산 점수를 산출하는 스키마. references/rubric.md와 1:1 대응. v1.8: T3 dedup에서 placeholder 안내문(예: '_(아직 없음)_', '있다면 추가') 사전 제외 — 템플릿이 의도적으로 여러 영역에 두는 안내문이 안티패턴으로 오인되지 않게. v1.5: G1 안티패턴에 markdown 디렉토리 트리(코드블록 안의 `├`/`└` 라인 5개 이상) 검출. v1.4: `@./AGENTS.md` 같은 redirect 파일을 인식해 import 대상의 점수를 차용. v1.3: D2_prime 영어/한국어 aliases, T3 중복 검사에서 같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍을 sync 의도로 보고 제외.",
   "import_redirect_rule": {
     "name": "Import redirect inheritance",
     "description": "본문이 단일 `@<path>.md` import 줄로만 구성된 파일은 'redirect 파일'로 간주. 채점 시 다음 룰을 적용한다.",
@@ -467,11 +467,13 @@
         "name": "규칙 중복",
         "max_points": 1,
         "note_v1_3": "v1.3에서 같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍은 sync 의도된 중복으로 보고 dedup 검사에서 제외. both 모드 프로젝트가 부당하게 감점되던 문제 해결.",
+        "note_v1_8": "v1.8에서 placeholder 안내문(예: '_(아직 없음)_', '있다면 추가', '검토 필요')을 dedup 사전에 제외. 템플릿이 의도적으로 여러 영역에 두는 안내문이 안티패턴으로 오인되지 않게.",
         "detection": {
           "type": "fuzzy_dedup",
           "rule": "모든 가이드의 bullet을 normalize 후 ≥ 0.85 유사도 매치",
           "exclusions": [
-            {"type": "sync_pair", "description": "같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍 사이 bullet 중복은 카운트하지 않음 (sync 의도)"}
+            {"type": "sync_pair", "description": "같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍 사이 bullet 중복은 카운트하지 않음 (sync 의도)"},
+            {"type": "placeholder_text", "description": "v1.8 — 다음 마커가 포함된 bullet은 dedup 대상 제외: 아직 없음, 채워주세요, 검토 필요, 있다면 추가, 비어 있다면, tbd, todo, '예:'로 시작, `_(`로 시작"}
           ],
           "scoring": [
             {"condition": "duplicate_pairs < 5", "points": 1},
