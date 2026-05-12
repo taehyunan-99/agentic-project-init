@@ -1,6 +1,6 @@
 ---
 name: guide-audit
-description: 사용자가 `/guide-audit` (또는 Codex의 `$guide-audit`)으로 명시 호출했을 때만 동작한다. 자동/암묵 트리거 금지. 프로젝트 내 모든 CLAUDE.md/AGENTS.md를 발견·분류·채점해 v1.2 루브릭 기준 프로젝트 총점을 산출한다. 인자에 따라 모드가 갈린다 — 인자 없으면 현재 작업 디렉토리를 프로젝트 루트로 보고 통합 채점, `/guide-audit <경로>` 형태로 파일 경로를 주면 단일 파일 채점. 결과는 콘솔에만 출력하고 파일을 만들지 않는다.
+description: 사용자가 `/guide-audit` (또는 Codex의 `$guide-audit`)으로 명시 호출했을 때만 동작한다. 자동/암묵 트리거 금지. 프로젝트 내 모든 CLAUDE.md/AGENTS.md를 발견·분류·채점해 v1.6 루브릭 기준 프로젝트 총점을 산출한다. 인자에 따라 모드가 갈린다 — 인자 없으면 현재 작업 디렉토리를 프로젝트 루트로 보고 통합 채점, `/guide-audit <경로>` 형태로 파일 경로를 주면 단일 파일 채점. 결과는 콘솔에만 출력하고 파일을 만들지 않는다.
 ---
 
 # guide-audit — CLAUDE.md/AGENTS.md 품질 채점
