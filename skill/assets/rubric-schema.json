@@ -1,0 +1,576 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agentic Project Init - Project-Wide Guide Quality Rubric",
+  "version": "1.2.0",
+  "description": "프로젝트 전체의 모든 CLAUDE.md/AGENTS.md를 발견·분류·채점하고 트리 합산 점수를 산출하는 스키마. references/rubric.md와 1:1 대응. v1.2: 프로젝트 통합 검사 모델, D5(HTML 주석), H3(sync 정합성), T 카테고리(트리 일관성) 신설.",
+  "audit_unit": "project_wide",
+  "audit_unit_description": "단일 파일이 아니라 프로젝트 내 모든 CLAUDE.md/AGENTS.md를 자동 발견·채점.",
+  "discovery": {
+    "patterns": ["CLAUDE.md", "AGENTS.md", "CLAUDE.local.md"],
+    "ignore_dirs": ["node_modules", ".git", "dist", "build", "target", ".next", ".venv", "venv", "__pycache__"]
+  },
+  "type_classification": {
+    "rules": [
+      {"if": "path == '<repo_root>/CLAUDE.md' OR path == '<repo_root>/AGENTS.md' AND has_section('영역별 가이드' OR 'Areas') AND has_links_to_subdir_guides", "then": "Type 1 (root_map)"},
+      {"if": "path is in subdirectory OR has_seven_section_template", "then": "Type 2 (area_guide)"},
+      {"if": "path is at root AND NOT map structure", "then": "Type 3 (single_guide)"}
+    ]
+  },
+  "grade_thresholds": {
+    "S_AI_Ready": 90,
+    "A_Healthy": 75,
+    "B_Functional": 60,
+    "C_Fragile": 40,
+    "D_Hostile": 0
+  },
+  "file_types": {
+    "root_map": {"code": 1, "applicable_max": 52},
+    "area_guide": {"code": 2, "applicable_max": 90},
+    "single_guide": {"code": 3, "applicable_max": 67}
+  },
+  "categories": [
+    {
+      "id": "A",
+      "name": "Non-Obvious Invariants",
+      "weight": 25,
+      "items": [
+        {
+          "id": "A1",
+          "name": "HOW NOT 섹션 존재",
+          "max_points": 8,
+          "applies_to": [2, 3],
+          "detection": {
+            "type": "section_with_count",
+            "section_keywords": ["HOW NOT", "⛔", "금지", "Never", "Don't", "주의사항", "Forbidden", "Anti-Pattern"],
+            "scoring": [
+              {"condition": "section_exists AND item_count >= 3", "points": 8},
+              {"condition": "section_exists AND item_count >= 1", "points": 4},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        },
+        {
+          "id": "A2",
+          "name": "금지 항목마다 이유 명시",
+          "max_points": 7,
+          "applies_to": [2, 3],
+          "detection": {
+            "type": "ratio",
+            "reason_patterns": [" — ", " - ", "→", " because ", " 왜냐", " 때문", " reason", " so that ", " 이유:", "Reason:"],
+            "scoring": [
+              {"condition": "ratio == 1.0", "points": 7},
+              {"condition": "ratio >= 0.5", "points": 4},
+              {"condition": "default", "points": 0}
+            ],
+            "skip_if": "A1 항목 0개"
+          }
+        },
+        {
+          "id": "A3",
+          "name": "WHY / 배경 지식 섹션",
+          "max_points": 5,
+          "applies_to": [2],
+          "detection": {
+            "type": "section_with_content",
+            "section_keywords": ["WHY", "배경", "Background", "Context", "Why"],
+            "placeholder_patterns": ["_(아직 없음)_", "_(없음)_", "TBD", "TODO"],
+            "scoring": [
+              {"condition": "section_exists AND content_lines >= 1 AND NOT placeholder", "points": 5},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        },
+        {
+          "id": "A4",
+          "name": "LEARNED CAUTIONS — 섹션 + 누적 활동 통합",
+          "max_points": 5,
+          "applies_to": [2],
+          "detection": {
+            "type": "section_with_dated_items",
+            "section_keywords": ["LEARNED CAUTIONS", "학습된 주의사항", "⚠️ LEARNED"],
+            "item_pattern": "^\\s*-\\s*\\(\\d{4}-\\d{2}-\\d{2}\\)",
+            "placeholder_patterns": ["_(아직 없음)_", "_(없음)_"],
+            "scoring": [
+              {"condition": "section_exists AND dated_item_count >= 1", "points": 5},
+              {"condition": "section_exists AND (dated_item_count == 0 OR placeholder_only)", "points": 2},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "name": "Specificity",
+      "weight": 20,
+      "items": [
+        {
+          "id": "B1",
+          "name": "추상 표현 비율",
+          "max_points": 10,
+          "applies_to": [1, 2, 3],
+          "detection": {
+            "type": "ratio_inverse",
+            "vague_terms": {
+              "ko": ["깨끗하게", "잘 짜", "잘 작성", "잘 처리", "잘 관리", "적절히", "꼼꼼하게", "신경 써서", "주의해서", "올바르게", "좋은 코드"],
+              "en": ["clean code", "good practice", "properly", "carefully", "well-written", "appropriate", "best practice", "write clean"]
+            },
+            "scoring": [
+              {"condition": "ratio <= 0.05", "points": 10},
+              {"condition": "ratio <= 0.15", "points": 5},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        },
+        {
+          "id": "B2",
+          "name": "측정 가능한 규칙",
+          "max_points": 10,
+          "applies_to": [2, 3],
+          "detection": {
+            "type": "regex_count",
+            "regex_patterns": [
+              {"name": "numeric_threshold", "pattern": "\\b\\d+\\s*(줄|lines?|chars?|글자|MB|KB|초|seconds?)\\b"},
+              {"name": "absolute_prohibition", "pattern": "(any|var|console\\.log|console\\.error|alert|eval)\\s*(금지|prohibited|forbidden|not allowed|쓰지 ?마)"},
+              {"name": "must_never", "pattern": "(반드시|must|always|never|MUST|NEVER)\\b"},
+              {"name": "command_in_codeblock", "pattern": "(?s)```[\\s\\S]+?(npm|pnpm|yarn|pip|uv|cargo|go |make |pytest|tsc|ruff|biome|eslint)[\\s\\S]+?```"},
+              {"name": "pr_ci_guard", "pattern": "PR\\s*(자동\\s*거절|reject|차단|블록)|CI\\s*(fail|실패)"},
+              {"name": "absolute_path", "pattern": "(\\./|src/|app/|apps/|backend/|frontend/|tests?/)\\S+"}
+            ],
+            "scoring": [
+              {"condition": "match_count >= 5", "points": 10},
+              {"condition": "match_count >= 1", "points": 5},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "name": "Commands & Workflows",
+      "weight": 15,
+      "items": [
+        {
+          "id": "C1",
+          "name": "빌드/테스트/린트 명령어 명시",
+          "max_points": 10,
+          "applies_to": [1, 2, 3],
+          "detection": {
+            "type": "command_categories",
+            "categories": {
+              "build": ["npm run build", "yarn build", "pnpm build", "make build", "cargo build", "go build", "python -m build", "uv build"],
+              "test": ["npm test", "npm run test", "yarn test", "pnpm test", "pytest", "vitest", "jest", "go test", "cargo test"],
+              "lint": ["lint", "eslint", "ruff", "flake8", "prettier", "biome"],
+              "typecheck": ["tsc", "mypy", "pyright", "noEmit"]
+            },
+            "allowed_code_styles": ["fenced_code_block", "inline_code"],
+            "scoring": [
+              {"condition": "matched_categories >= 3", "points": 10},
+              {"condition": "matched_categories >= 1", "points": 5},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        },
+        {
+          "id": "C2",
+          "name": "명령어 가드",
+          "max_points": 5,
+          "applies_to": [1, 2, 3],
+          "detection": {
+            "type": "regex_count",
+            "regex_patterns": [
+              "(watch 모드|--watch).{0,30}(금지|prohibited|not allowed|쓰지 ?마)",
+              "(prod|production).{0,30}(직접|directly).{0,30}(금지|don't|never)",
+              "(force|--force|-f).{0,30}(주의|warning|금지)",
+              "no-verify.{0,30}(금지|never|prohibited)"
+            ],
+            "scoring": [
+              {"condition": "count >= 1", "points": 5},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "name": "Structure & Discoverability",
+      "weight": 18,
+      "items": [
+        {
+          "id": "D1",
+          "name": "마크다운 헤딩 구조",
+          "max_points": 3,
+          "applies_to": [1, 2, 3],
+          "detection": {
+            "type": "heading_count",
+            "scoring": [
+              {"condition": "h1_count == 1 AND h2_count >= 3", "points": 3},
+              {"condition": "h2_count >= 1", "points": 1},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        },
+        {
+          "id": "D2",
+          "name": "Map 링크 (root용)",
+          "max_points": 3,
+          "applies_to": [1],
+          "detection": {
+            "type": "map_links",
+            "scoring": [
+              {"condition": "link_count_matches_area_count", "points": 3},
+              {"condition": "link_count >= 1", "points": 1},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        },
+        {
+          "id": "D2_prime",
+          "name": "7섹션 템플릿 준수 (영역 가이드용)",
+          "max_points": 3,
+          "applies_to": [2],
+          "detection": {
+            "type": "section_set_match",
+            "required_sections": ["WHAT", "CONTENTS", "HOW", "HOW NOT", "WHERE", "WHY", "LEARNED CAUTIONS"],
+            "scoring": [
+              {"condition": "matched_count >= 6", "points": 3},
+              {"condition": "matched_count >= 4", "points": 1},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        },
+        {
+          "id": "D3",
+          "name": "길이 (100줄 기준)",
+          "max_points": 3,
+          "applies_to": [1, 2, 3],
+          "detection": {
+            "type": "line_count",
+            "scoring": [
+              {"condition": "line_count <= 100", "points": 3},
+              {"condition": "line_count <= 200", "points": 1},
+              {"condition": "default", "points": 0}
+            ],
+            "note": "@import/외부 링크로 분할된 본문 라인만 카운트 (D4와 연계)"
+          }
+        },
+        {
+          "id": "D4",
+          "name": "@import / 분할 활용",
+          "max_points": 3,
+          "applies_to": [1, 2, 3],
+          "detection": {
+            "type": "import_or_link_count",
+            "patterns": [
+              {"name": "claude_import", "pattern": "^\\s*@\\.{0,2}/[\\w/.-]+\\.md\\s*$"},
+              {"name": "external_md_link", "pattern": "\\[[^\\]]+\\]\\((?!#)[^)]+\\.md\\)"}
+            ],
+            "scoring": [
+              {"condition": "import_count >= 1 OR external_md_link_count >= 2", "points": 3},
+              {"condition": "external_md_link_count == 1", "points": 1},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        },
+        {
+          "id": "D5",
+          "name": "HTML 주석으로 메타 안내 격리",
+          "max_points": 3,
+          "applies_to": [1, 2, 3],
+          "note_v1_2": "공식 문서: 블록 수준 HTML 주석은 컨텍스트에 주입되기 전 제거됨. 사람용 안내문은 주석으로 → 토큰 비용 0.",
+          "detection": {
+            "type": "html_comment_volume",
+            "pattern": "<!--[\\s\\S]*?-->",
+            "exclude_patterns": ["<!--\\s*-->"],
+            "scoring": [
+              {"condition": "comment_block_count >= 2 AND total_comment_lines >= 5", "points": 3},
+              {"condition": "comment_block_count >= 1", "points": 1},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "E",
+      "name": "Cross-Reference & Boundaries",
+      "weight": 7,
+      "items": [
+        {
+          "id": "E1",
+          "name": "WHERE / 의존성 명시",
+          "max_points": 4,
+          "applies_to": [2],
+          "detection": {
+            "type": "section_or_keyword",
+            "section_keywords": ["WHERE"],
+            "fallback_keywords": ["의존", "depends on", "called by", "피의존", "boundary", "경계"],
+            "scoring": [
+              {"condition": "section_exists OR keyword_count >= 1", "points": 4},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        },
+        {
+          "id": "E2",
+          "name": "다른 영역과의 cross-link",
+          "max_points": 3,
+          "applies_to": [2],
+          "detection": {
+            "type": "external_md_link_count",
+            "exclude_self": true,
+            "scoring": [
+              {"condition": "link_count >= 1", "points": 3},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "F",
+      "name": "Living Document Signals",
+      "weight": 5,
+      "items": [
+        {
+          "id": "F1",
+          "name": "마지막 수정 신선도",
+          "max_points": 5,
+          "applies_to": [1, 2, 3],
+          "detection": {
+            "type": "git_last_modified",
+            "skip_if": ["no_git_history", "file_age_days < 7"],
+            "scoring": [
+              {"condition": "days_since_last_commit <= 90", "points": 5},
+              {"condition": "days_since_last_commit <= 180", "points": 2},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "H",
+      "name": "Placement & Multi-Agent",
+      "weight": 7,
+      "items": [
+        {
+          "id": "H1",
+          "name": "올바른 위치",
+          "max_points": 3,
+          "applies_to": [1, 2],
+          "detection": {
+            "type": "path_check",
+            "valid_locations": {
+              "1": ["<repo_root>/CLAUDE.md", "<repo_root>/AGENTS.md", "<repo_root>/.claude/CLAUDE.md"],
+              "2": ["<subdir>/CLAUDE.md", "<subdir>/AGENTS.md"]
+            },
+            "scoring": [
+              {"condition": "path matches valid_locations[type_code]", "points": 3},
+              {"condition": "path is in docs/ or non-auto-loaded dir", "points": 1},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        },
+        {
+          "id": "H2",
+          "name": "AGENTS.md 동시 존재",
+          "max_points": 2,
+          "applies_to": [1],
+          "detection": {
+            "type": "sibling_file_check",
+            "scoring": [
+              {"condition": "both_CLAUDE_md_and_AGENTS_md_exist", "points": 2},
+              {"condition": "one_exists", "points": 1},
+              {"condition": "default", "points": 0}
+            ]
+          }
+        },
+        {
+          "id": "H3",
+          "name": "CLAUDE.md ↔ AGENTS.md sync 정합성",
+          "max_points": 2,
+          "applies_to": [1],
+          "note_v1_2": "양쪽 다 있는데 import도 없고 내용도 다르면 가장 위험한 drift. 영상 'AGENTS.md 트릭' 정합 확인.",
+          "detection": {
+            "type": "sync_coherence",
+            "rules": [
+              {"if": "only one file exists", "points": 1, "label": "single agent OK"},
+              {"if": "CLAUDE.md contains '@./AGENTS.md' OR AGENTS.md contains '@./CLAUDE.md'", "points": 2, "label": "linked via @import"},
+              {"if": "diff_ratio(CLAUDE.md, AGENTS.md) < 0.05", "points": 2, "label": "content sync"},
+              {"if": "default", "points": 0, "label": "drift risk"}
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "tree_category": {
+    "id": "T",
+    "name": "Tree Consistency",
+    "scope": "project_wide",
+    "applied_once_per_project": true,
+    "weight": 3,
+    "items": [
+      {
+        "id": "T1",
+        "name": "영역 누락",
+        "max_points": 1,
+        "detection": {
+          "type": "map_vs_filesystem",
+          "rule": "root map의 모든 영역 링크가 실제 파일을 가리킴",
+          "scoring": [
+            {"condition": "missing_files == 0", "points": 1},
+            {"condition": "default", "points": 0}
+          ]
+        }
+      },
+      {
+        "id": "T2",
+        "name": "죽은 cross-link",
+        "max_points": 1,
+        "detection": {
+          "type": "all_md_link_check",
+          "rule": "모든 가이드의 마크다운 링크 → 실제 파일 + 앵커 매치",
+          "scoring": [
+            {"condition": "broken_links == 0", "points": 1},
+            {"condition": "default", "points": 0}
+          ]
+        }
+      },
+      {
+        "id": "T3",
+        "name": "규칙 중복",
+        "max_points": 1,
+        "detection": {
+          "type": "fuzzy_dedup",
+          "rule": "모든 가이드의 bullet을 normalize 후 ≥ 0.85 유사도 매치",
+          "scoring": [
+            {"condition": "duplicate_pairs < 5", "points": 1},
+            {"condition": "default", "points": 0}
+          ]
+        }
+      }
+    ]
+  },
+  "anti_patterns": {
+    "id": "G",
+    "name": "Anti-Patterns",
+    "max_penalty": 5,
+    "applied_at": "raw_stage",
+    "items": [
+      {
+        "id": "G1",
+        "name": "README 복붙형 설명",
+        "penalty": 3,
+        "detection": {
+          "type": "regex_count",
+          "regex_patterns": [
+            "이 프로젝트는 .* 사용",
+            "uses (React|Vue|Angular|Next|FastAPI|Django|Express)",
+            "src/ 폴더에 .* 있",
+            "is a (React|Python|Node\\.js) (application|project|app)"
+          ],
+          "trigger_threshold": 5
+        }
+      },
+      {
+        "id": "G2",
+        "name": "인사말 / 마무리 멘트",
+        "penalty": 1,
+        "detection": {
+          "type": "regex_match",
+          "regex_patterns": ["안녕하세요", "수고하셨습니다", "감사합니다", "Hello", "Thank you", "Thanks for"],
+          "trigger_threshold": 1
+        }
+      },
+      {
+        "id": "G3",
+        "name": "프로젝트 무관 일반 베스트 프랙티스",
+        "penalty": 1,
+        "detection": {
+          "type": "regex_count",
+          "regex_patterns": [
+            "DRY 원칙", "DRY principle",
+            "SOLID 원칙", "SOLID principles",
+            "write clean code", "single responsibility",
+            "Single Responsibility Principle",
+            "KISS 원칙", "KISS principle",
+            "Don't Repeat Yourself"
+          ],
+          "trigger_threshold": 3
+        }
+      }
+    ]
+  },
+  "scoring_formula": {
+    "version": "1.2",
+    "description": "파일 단위 채점 + 트리 단위 채점 + 가중 평균 → 프로젝트 총점",
+    "file_level_steps": [
+      "applicable_max = sum(item.max_points for item in A~H if type_code in item.applies_to)",
+      "raw_earned = sum(item.computed_score)",
+      "anti_penalty = max(-5, sum(triggered_penalties) * -1)",
+      "adjusted_raw = max(0, raw_earned + anti_penalty)",
+      "file_score = round((adjusted_raw / applicable_max) * 100, 1)"
+    ],
+    "tree_level_steps": [
+      "tree_max = 3  # T1+T2+T3",
+      "tree_earned = sum(T.computed_score)",
+      "tree_penalty = (tree_max - tree_earned) * 3.33  # T 1점 손실당 프로젝트 총점 -3.33"
+    ],
+    "project_level_steps": [
+      "type_weights = {1: 2, 2: 1, 3: 1}",
+      "weighted_avg = sum(file_score * type_weights[file.type]) / sum(type_weights[file.type])",
+      "project_score = round(max(0, min(100, weighted_avg - tree_penalty)), 1)"
+    ],
+    "examples": [
+      {
+        "scenario": "프로젝트: root map(85점) + frontend 영역(70점) + backend 영역(60점), T 3/3 만점",
+        "weighted_avg": "(85*2 + 70*1 + 60*1) / 4 = 75.0",
+        "tree_penalty": 0,
+        "project_score": 75.0
+      },
+      {
+        "scenario": "동일 점수인데 T1(영역 누락) 0점",
+        "weighted_avg": 75.0,
+        "tree_penalty": 3.33,
+        "project_score": 71.7
+      },
+      {
+        "scenario": "T 전부 0점 (영역 누락 + 죽은 link + 규칙 중복)",
+        "weighted_avg": 75.0,
+        "tree_penalty": 9.99,
+        "project_score": 65.0
+      }
+    ]
+  },
+  "output_format": {
+    "description": "프로젝트 통합 채점 결과 표준 출력",
+    "schema": {
+      "project_path": "string",
+      "project_score": "0-100",
+      "grade": "S | A | B | C | D",
+      "weighted_avg": "number",
+      "tree_penalty": "number",
+      "files_audited": [
+        {
+          "path": "string",
+          "type": "1 | 2 | 3",
+          "file_score": "number",
+          "grade": "S | A | B | C | D",
+          "category_scores": "{ A:..., B:..., ... }",
+          "anti_pattern_penalty": "number",
+          "recommendations": ["string"]
+        }
+      ],
+      "tree_results": {
+        "T1_missing_areas": ["string"],
+        "T2_broken_links": ["string"],
+        "T3_duplicate_rules": [{"rule": "string", "in_files": ["string"]}]
+      },
+      "top_recommendations": ["string — 프로젝트 단위 우선순위 액션 아이템"]
+    }
+  }
+}
