@@ -86,8 +86,8 @@ README에 "이 디렉토리는 X 모듈입니다" 정도만 적혀 있으면 에
 
 한 프로젝트에서 팀원들이 서로 다른 에이전트(Claude Code, Codex 등)를 써도 동일한 가이드를 봅니다.
 
-- `both` 모드 → `CLAUDE.md` ↔ `AGENTS.md` 양방향 sync (pre-commit hook)
-- 한쪽 수정해도 commit 시 자동으로 따라갑니다.
+- `both` 모드 → `AGENTS.md`를 본문으로 두고 `CLAUDE.md`는 `@./AGENTS.md` 한 줄로 import.
+- 단일 파일만 편집하므로 sync drift가 구조적으로 불가능합니다. (외부 스크립트/hook 불요)
 
 <br/><br/>
 
@@ -227,31 +227,33 @@ Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $env:TEMP\api, "$env:U
 /agentic-project-init           # 인자 없음 → 어떤 환경인지 사용자에게 묻고 대기
 /agentic-project-init claude    # Claude Code용 (CLAUDE.md)
 /agentic-project-init agents    # Codex / Antigravity / Cursor용 (AGENTS.md)
-/agentic-project-init both      # 둘 다 + 양방향 sync hook
+/agentic-project-init both      # AGENTS.md 본문 + CLAUDE.md = @./AGENTS.md (단일 진실 공급원)
 ```
 
 <br/>
 
 ### 인자별 산출물
 
-| 인자 | 출력 | sync 자동화 |
-|------|------|------------|
-| `claude` | `CLAUDE.md` + `.claude/skills/learn/SKILL.md` | ❌ |
-| `agents` | `AGENTS.md` + `.agents/skills/learn/SKILL.md` + `.agents/workflows/learn.md` | ❌ |
-| `both` | 위 두 모드 모두 + sync hook | ✅ pre-commit hook |
+| 인자 | 본문 파일 | 호환 파일 |
+|------|-----------|-----------|
+| `claude` | `CLAUDE.md` + `.claude/skills/learn/SKILL.md` | — |
+| `agents` | `AGENTS.md` + `.agents/skills/learn/SKILL.md` + `.agents/workflows/learn.md` | — |
+| `both` | `AGENTS.md` (모든 위치) + `.claude/skills/learn/` + `.agents/skills/learn/` + `.agents/workflows/learn.md` | `CLAUDE.md` = `@./AGENTS.md` 한 줄 |
 | (없음) | 위 3개 중 어느 환경인지 사용자에게 묻고 대기합니다 | — |
+
+`both` 모드는 본문을 `AGENTS.md` 한 파일에만 둡니다. Claude Code는 `CLAUDE.md`의 `@./AGENTS.md` import를 자동 따라가 같은 본문을 봅니다. **외부 sync 스크립트/hook이 필요 없습니다** — 이전 버전의 pre-commit hook 방식은 폐기되었고, 기존 사용자는 스킬 재호출 시 마이그레이션 안내를 받습니다.
 
 <br/>
 
 ### 동작 흐름 (스킬이 하는 일)
 
 1. 인자 파싱 → 모드 확정 (인자 없으면 사용자에게 환경 질문)
-2. git 리포 검증 (both 모드는 git 필수)
-3. 기존 파일 충돌 검사
+2. git 리포 검증 (필수 아님 — 없어도 진행)
+3. 레거시 sync hook 감지 시 마이그레이션 안내 + 기존 파일 충돌 검사
 4. 영역 자동 탐지 (`apps/`, `frontend`, `backend`, `database`, ...) → 사용자 검토
 5. 영역별 가이드 초안 작성 → 사용자 승인
-6. 파일 생성 (root map + 영역 가이드 + `learn` 스킬)
-7. (both 모드) sync hook 활성화 안내
+6. 파일 생성 (root map + 영역 가이드 + `learn` 스킬). Both 모드면 `CLAUDE.md`는 `@./AGENTS.md` 한 줄짜리 import 파일로 생성
+7. 마무리 안내 (Both 모드는 import 구조 설명)
 
 <br/><br/>
 
@@ -267,7 +269,7 @@ Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $env:TEMP\api, "$env:U
 
 **Q. 한 프로젝트에 Claude Code 사용자와 Codex 사용자가 섞여 있다면?**
 
-`both` 모드로 생성하세요. pre-commit hook이 양방향으로 동기화합니다.
+`both` 모드로 생성하세요. `AGENTS.md`가 단일 진실 공급원이 되고 `CLAUDE.md`는 `@./AGENTS.md` import로 자동 동기화됩니다.
 
 **Q. /learn은 어떻게 동작하나요?**
 
