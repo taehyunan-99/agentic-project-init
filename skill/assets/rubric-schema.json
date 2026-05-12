@@ -1,8 +1,20 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Agentic Project Init - Project-Wide Guide Quality Rubric",
-  "version": "1.3.0",
-  "description": "프로젝트 전체의 모든 CLAUDE.md/AGENTS.md를 발견·분류·채점하고 트리 합산 점수를 산출하는 스키마. references/rubric.md와 1:1 대응. v1.3: D2_prime 섹션명을 영어/한국어 aliases로 확장, T3 중복 검사에서 같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍을 sync 의도로 보고 제외.",
+  "version": "1.4.0",
+  "description": "프로젝트 전체의 모든 CLAUDE.md/AGENTS.md를 발견·분류·채점하고 트리 합산 점수를 산출하는 스키마. references/rubric.md와 1:1 대응. v1.4: `@./AGENTS.md` 같은 import 한 줄짜리 redirect 파일을 인식해 import 대상의 점수를 차용하고 가중 평균에서는 본문 파일만 카운트(중복 방지). v1.3: D2_prime 섹션명을 영어/한국어 aliases로 확장, T3 중복 검사에서 같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍을 sync 의도로 보고 제외.",
+  "import_redirect_rule": {
+    "name": "Import redirect inheritance",
+    "description": "본문이 단일 `@<path>.md` import 줄로만 구성된 파일은 'redirect 파일'로 간주. 채점 시 다음 룰을 적용한다.",
+    "detection_pattern": "^@(\\.{0,2}/?[\\w./-]+\\.md)\\s*$",
+    "behavior": [
+      "단일 파일 모드: import 대상 파일을 대신 채점하고, 결과의 path만 'redirect → @target'으로 표기.",
+      "프로젝트 모드: redirect 파일은 import 대상의 FileResult를 차용 (모든 카테고리 점수 동일). path/line_count는 redirect 파일 자신의 것.",
+      "가중 평균 계산: redirect 파일은 제외하고 본문 파일만 type_weights로 합산 (sync_group 중복 카운트 방지).",
+      "추천 생성: redirect 파일은 본문과 동일 약점을 가지므로 추천 목록에서 제외 (본문 추천에 흡수)."
+    ],
+    "rationale": "both 모드의 `CLAUDE.md = @./AGENTS.md` 한 줄짜리 import 구조를 도구가 인식하지 못해 0점 처리되던 문제 해결."
+  },
   "audit_unit": "project_wide",
   "audit_unit_description": "단일 파일이 아니라 프로젝트 내 모든 CLAUDE.md/AGENTS.md를 자동 발견·채점.",
   "discovery": {

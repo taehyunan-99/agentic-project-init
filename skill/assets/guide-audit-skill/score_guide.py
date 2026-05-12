@@ -45,6 +45,7 @@ class FileResult:
     category_scores: dict[str, dict] = field(default_factory=dict)
     item_evidence: list[dict] = field(default_factory=list)
     anti_pattern_hits: list[dict] = field(default_factory=list)
+    import_redirect_to: str | None = None  # v1.4: @import 한 줄 파일이면 대상 경로
 
     def to_dict(self) -> dict:
         return {
@@ -57,6 +58,7 @@ class FileResult:
             "anti_pattern_penalty": self.anti_penalty,
             "anti_pattern_hits": self.anti_pattern_hits,
             "weak_items": [e for e in self.item_evidence if e["earned"] < e["max_points"]],
+            "import_redirect_to": self.import_redirect_to,
         }
 
 
@@ -158,6 +160,27 @@ def classify_type(path: Path, root: Path, content: str) -> int:
 
 def strip_html_comments(text: str) -> str:
     return re.sub(r"<!--[\s\S]*?-->", "", text)
+
+
+def is_import_redirect(text: str) -> str | None:
+    """파일 본문이 단일 `@<상대경로>.md` import 한 줄이면 그 경로를 반환.
+
+    HTML 주석과 빈 줄은 무시한다. v1.4부터 도구가 both 모드의
+    `CLAUDE.md = @./AGENTS.md` 구조를 알아채기 위해 사용.
+
+    예시 인정 패턴:
+        @./AGENTS.md
+        @../shared/AGENTS.md
+        @AGENTS.md
+
+    여러 줄/본문이 섞여 있으면 None (그건 일반 가이드로 채점).
+    """
+    stripped = strip_html_comments(text)
+    lines = [l.strip() for l in stripped.splitlines() if l.strip()]
+    if len(lines) != 1:
+        return None
+    m = re.match(r"^@(\.{0,2}/?[\w./-]+\.md)\s*$", lines[0])
+    return m.group(1) if m else None
 
 
 def count_non_comment_lines(text: str) -> int:
@@ -756,13 +779,61 @@ def score_project(root: Path, schema: dict) -> ProjectResult:
             top_recommendations=["가이드 파일이 없습니다. `/agentic-project-init`로 먼저 생성하세요."],
         )
 
-    file_results = [score_file(g, root, schema) for g in guides]
+    # v1.4: redirect 파일을 사전 분류하여 본문 파일만 정상 채점,
+    # redirect 파일은 본문 파일의 점수를 차용한다.
+    redirect_map: dict[Path, Path] = {}  # redirect_path → target_path
+    body_guides: list[Path] = []
+    for g in guides:
+        text = g.read_text(encoding="utf-8", errors="ignore")
+        redirect = is_import_redirect(text)
+        if redirect:
+            target = (g.parent / redirect).resolve()
+            if target.exists() and target in [x.resolve() for x in guides]:
+                redirect_map[g] = target
+                continue
+        body_guides.append(g)
+
+    body_results: dict[Path, FileResult] = {}
+    for g in body_guides:
+        body_results[g.resolve()] = score_file(g, root, schema)
+
+    file_results: list[FileResult] = []
+    for g in guides:
+        if g in redirect_map:
+            target = redirect_map[g]
+            tr = body_results.get(target.resolve())
+            if tr is None:
+                file_results.append(score_file(g, root, schema))
+                continue
+            # 본문 결과를 차용하되 path/line_count는 redirect 파일 자신의 것 유지
+            rel_path = str(g.relative_to(root)) if g.is_relative_to(root) else str(g)
+            redirect_text = g.read_text(encoding="utf-8", errors="ignore")
+            file_results.append(FileResult(
+                path=rel_path,
+                type_code=tr.type_code,
+                line_count=count_non_comment_lines(redirect_text),
+                raw_earned=tr.raw_earned,
+                anti_penalty=tr.anti_penalty,
+                adjusted_raw=tr.adjusted_raw,
+                applicable_max=tr.applicable_max,
+                file_score=tr.file_score,
+                grade=tr.grade,
+                category_scores=tr.category_scores,
+                item_evidence=tr.item_evidence,
+                anti_pattern_hits=tr.anti_pattern_hits,
+                import_redirect_to=str(target.relative_to(root)) if target.is_relative_to(root) else str(target),
+            ))
+        else:
+            file_results.append(body_results[g.resolve()])
+
     tree = score_tree(root, guides, schema)
 
+    # v1.4: 가중 평균은 본문 파일만 카운트 (redirect는 중복 카운트 방지)
+    body_for_avg = [fr for fr in file_results if fr.import_redirect_to is None]
     type_weights = {1: 2, 2: 1, 3: 1}
-    weighted_sum = sum(fr.file_score * type_weights[fr.type_code] for fr in file_results)
-    weight_total = sum(type_weights[fr.type_code] for fr in file_results)
-    weighted_avg = round(weighted_sum / max(1, weight_total), 1)
+    weighted_sum = sum(fr.file_score * type_weights[fr.type_code] for fr in body_for_avg)
+    weight_total = sum(type_weights[fr.type_code] for fr in body_for_avg)
+    weighted_avg = round(weighted_sum / max(1, weight_total), 1) if weight_total > 0 else 0.0
     project_score = round(max(0.0, min(100.0, weighted_avg - tree.penalty)), 1)
 
     recommendations = generate_recommendations(file_results, tree)
@@ -781,7 +852,10 @@ def score_project(root: Path, schema: dict) -> ProjectResult:
 
 def generate_recommendations(files: list[FileResult], tree: TreeResult) -> list[str]:
     recs: list[tuple[float, str]] = []
+    # v1.4: redirect 파일은 본문과 중복 추천 방지를 위해 제외
     for fr in files:
+        if fr.import_redirect_to is not None:
+            continue
         for item in fr.item_evidence:
             gap = item["max_points"] - item["earned"]
             if gap > 0:
@@ -831,14 +905,18 @@ def print_text_report(result: ProjectResult, single_file: bool = False) -> None:
     print(f"- 채점 파일: {len(result.files)}개")
 
     print("\n## 파일별 점수\n")
-    print("| Path | Type | Score | Grade |")
-    print("|---|---|---|---|")
+    print("| Path | Type | Score | Grade | Note |")
+    print("|---|---|---|---|---|")
     type_label = {1: "root_map", 2: "area_guide", 3: "single_guide"}
     for fr in result.files:
-        print(f"| `{fr.path}` | {type_label.get(fr.type_code, '?')} | {fr.file_score} | {fr.grade} |")
+        note = f"→ @{fr.import_redirect_to}" if fr.import_redirect_to else ""
+        print(f"| `{fr.path}` | {type_label.get(fr.type_code, '?')} | {fr.file_score} | {fr.grade} | {note} |")
 
     print("\n## 파일별 카테고리 breakdown\n")
+    # redirect 파일은 본문과 중복이라 본문만 표시
     for fr in result.files:
+        if fr.import_redirect_to is not None:
+            continue
         print(f"### `{fr.path}` ({fr.file_score}, {fr.grade})")
         for cid, sc in sorted(fr.category_scores.items()):
             ratio = sc["earned"] / sc["max"] * 100 if sc["max"] > 0 else 0
@@ -902,7 +980,19 @@ def main(argv: list[str]) -> int:
         except Exception:
             root = path.parent
         schema = load_schema(root)
-        fr = score_file(path, root, schema, type_code=args.type)
+        # v1.4: redirect 파일을 단독 채점하면 0점이 나오므로 대상 파일을 대신 채점
+        redirect = is_import_redirect(path.read_text(encoding="utf-8", errors="ignore"))
+        if redirect:
+            target = (path.parent / redirect).resolve()
+            if target.is_file():
+                fr = score_file(target, root, schema, type_code=args.type)
+                fr.import_redirect_to = str(target.relative_to(root)) if target.is_relative_to(root) else str(target)
+                fr.path = f"{path.relative_to(root) if path.is_relative_to(root) else path} → @{redirect}"
+            else:
+                print(f"❌ import 대상 파일을 찾을 수 없음: {target}", file=sys.stderr)
+                return 2
+        else:
+            fr = score_file(path, root, schema, type_code=args.type)
         result = ProjectResult(
             root=str(root),
             project_score=fr.file_score,

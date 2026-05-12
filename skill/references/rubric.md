@@ -1,4 +1,8 @@
-# Agentic Project Init — 가이드 파일 품질 루브릭 v1.3
+# Agentic Project Init — 가이드 파일 품질 루브릭 v1.4
+
+> **v1.4 변경**: `@./AGENTS.md` 한 줄짜리 import 파일을 인식해 import 대상의 점수를 차용. 가중 평균은 본문 파일만 카운트 (sync_group 중복 방지). both 모드 풀 적용 시 도구가 정확한 점수를 보고하도록 수정.
+
+---
 
 > AI 에이전트용 가이드 파일(`CLAUDE.md` / `AGENTS.md` / 영역 가이드)의 품질을
 > 100점 만점으로 평가하는 내부 기준서.
