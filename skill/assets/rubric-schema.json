@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Agentic Project Init - Project-Wide Guide Quality Rubric",
-  "version": "1.4.0",
-  "description": "프로젝트 전체의 모든 CLAUDE.md/AGENTS.md를 발견·분류·채점하고 트리 합산 점수를 산출하는 스키마. references/rubric.md와 1:1 대응. v1.4: `@./AGENTS.md` 같은 import 한 줄짜리 redirect 파일을 인식해 import 대상의 점수를 차용하고 가중 평균에서는 본문 파일만 카운트(중복 방지). v1.3: D2_prime 섹션명을 영어/한국어 aliases로 확장, T3 중복 검사에서 같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍을 sync 의도로 보고 제외.",
+  "version": "1.5.0",
+  "description": "프로젝트 전체의 모든 CLAUDE.md/AGENTS.md를 발견·분류·채점하고 트리 합산 점수를 산출하는 스키마. references/rubric.md와 1:1 대응. v1.5: G1 안티패턴에 markdown 디렉토리 트리(코드블록 안의 `├`/`└` 라인 5개 이상) 검출 추가, 그룹별 트리거 임계(자연어=5, 트리=1) 분리. v1.4: `@./AGENTS.md` 같은 import 한 줄짜리 redirect 파일을 인식해 import 대상의 점수를 차용하고 가중 평균에서는 본문 파일만 카운트(중복 방지). v1.3: D2_prime 섹션명을 영어/한국어 aliases로 확장, T3 중복 검사에서 같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍을 sync 의도로 보고 제외.",
   "import_redirect_rule": {
     "name": "Import redirect inheritance",
     "description": "본문이 단일 `@<path>.md` import 줄로만 구성된 파일은 'redirect 파일'로 간주. 채점 시 다음 룰을 적용한다.",
@@ -491,15 +491,28 @@
         "id": "G1",
         "name": "README 복붙형 설명",
         "penalty": 3,
+        "note_v1_5": "v1.5에서 자연어 패턴(기존)과 디렉토리 트리 패턴(신설)을 분리. 트리는 한 번만 나와도 안티패턴으로 처벌 (ls로 알 수 있는 정보 = 가장 큰 토큰 낭비).",
         "detection": {
-          "type": "regex_count",
-          "regex_patterns": [
-            "이 프로젝트는 .* 사용",
-            "uses (React|Vue|Angular|Next|FastAPI|Django|Express)",
-            "src/ 폴더에 .* 있",
-            "is a (React|Python|Node\\.js) (application|project|app)"
-          ],
-          "trigger_threshold": 5
+          "type": "regex_count_grouped",
+          "groups": [
+            {
+              "name": "natural_language",
+              "regex_patterns": [
+                "이 프로젝트는 .* 사용",
+                "uses (React|Vue|Angular|Next|FastAPI|Django|Express)",
+                "src/ 폴더에 .* 있",
+                "is a (React|Python|Node\\.js) (application|project|app)"
+              ],
+              "trigger_threshold": 5
+            },
+            {
+              "name": "directory_tree",
+              "regex_patterns": [
+                "(?s)```[^\\n]*\\n(?:[^\\n]*\\n){0,30}?(?:[ \\t]*[├└│][─ ─]*[^\\n]+\\n){5,}"
+              ],
+              "trigger_threshold": 1
+            }
+          ]
         }
       },
       {

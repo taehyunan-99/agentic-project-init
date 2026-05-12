@@ -538,19 +538,48 @@ def score_H3(file_path: Path) -> tuple[float, str]:
 
 # Anti-patterns
 def detect_anti_patterns(text: str, schema: dict) -> tuple[float, list[dict]]:
+    """v1.5: 두 가지 detection 타입 지원
+    - regex_count (구): regex_patterns flat list + 단일 trigger_threshold
+    - regex_count_grouped (신): groups[].regex_patterns + 그룹별 trigger_threshold,
+      한 그룹이라도 임계를 넘으면 페널티 적용 (그룹별 매칭 카운트도 함께 기록)
+    """
     visible = strip_html_comments(text)
     items = schema["anti_patterns"]["items"]
     hits = []
     total_penalty = 0.0
     for ap in items:
         det = ap["detection"]
-        patterns = det["regex_patterns"]
-        match_count = 0
-        for p in patterns:
-            match_count += len(re.findall(p, visible, re.IGNORECASE))
-        threshold = det.get("trigger_threshold", 1)
-        if match_count >= threshold:
-            hits.append({"id": ap["id"], "name": ap["name"], "matches": match_count, "penalty": ap["penalty"]})
+        det_type = det.get("type", "regex_count")
+
+        triggered = False
+        match_summary: list[str] = []
+        total_matches = 0
+
+        if det_type == "regex_count_grouped":
+            for group in det.get("groups", []):
+                count = 0
+                for p in group.get("regex_patterns", []):
+                    count += len(re.findall(p, visible, re.IGNORECASE))
+                if count > 0:
+                    match_summary.append(f"{group['name']}={count}")
+                total_matches += count
+                if count >= group.get("trigger_threshold", 1):
+                    triggered = True
+        else:  # regex_count (default)
+            patterns = det.get("regex_patterns", [])
+            for p in patterns:
+                total_matches += len(re.findall(p, visible, re.IGNORECASE))
+            if total_matches >= det.get("trigger_threshold", 1):
+                triggered = True
+
+        if triggered:
+            hits.append({
+                "id": ap["id"],
+                "name": ap["name"],
+                "matches": total_matches,
+                "groups": match_summary,
+                "penalty": ap["penalty"],
+            })
             total_penalty += ap["penalty"]
     capped = min(total_penalty, schema["anti_patterns"]["max_penalty"])
     return -capped, hits
