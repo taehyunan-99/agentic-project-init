@@ -38,10 +38,22 @@
 - {함정} — {왜 안 되는지}
 
 ## 5. WHERE — 다른 모듈과의 의존성
+
 <!--
-다른 영역 가이드를 가리킬 때는 반드시 마크다운 링크로 적는다.
-예: [`apps/backend/CLAUDE.md`](../backend/CLAUDE.md) — 변경 영향 추적 + 에이전트가 cross-reference로 따라갈 수 있게.
+의존성을 결합 강도에 따라 두 가지로 표현한다 (자세한 결정 기준: `references/rubric.md`의 "@import 최소주의").
+
+1. 강결합 (API contract / schema SoT) — `@<상대경로>` 한 줄 import.
+   영역 진입 후 자동으로 함께 로드되어 침묵의 가정을 방지한다.
+   "한쪽 변경 = 다른쪽 즉시 깨짐" 케이스에만 사용.
+
+2. 약결합 (호출 관계·도메인 공유·운영 시점 참고) — 마크다운 링크 + 한 줄 설명.
+   작업 시점에만 따라가 본다.
+
+경계가 모호하면 약결합(마크다운 링크)이 기본값.
 -->
+
+<!-- 강결합 — 자동 import (해당 시 한두 줄) -->
+@../{other-area}/{가이드 파일명}
 
 - **의존**: {예: [`apps/backend/CLAUDE.md`](../backend/CLAUDE.md)의 `/api/users` 엔드포인트}
 - **피의존**: {예: [`apps/admin/CLAUDE.md`](../admin/CLAUDE.md)의 권한 체크 미들웨어}
