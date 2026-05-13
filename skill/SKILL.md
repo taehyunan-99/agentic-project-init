@@ -244,6 +244,29 @@ _(아직 없음)_
 
 ### 7) 마무리 안내
 
+**7-0) 스킬 설치 자가 검증 (필수)**
+
+마무리 안내 직전에 반드시 다음 검증을 수행해 6단계의 스킬 복사 누락을 막는다. LLM이 단계를 빠뜨리는 경우가 실제로 관찰됐으므로 이 검증은 생략 불가.
+
+모드에 따라 다음 경로들이 존재해야 한다:
+
+| 모드 | 검증 경로 |
+|------|-----------|
+| CLAUDE | `.claude/skills/learn/SKILL.md`, `.claude/skills/guide-audit/SKILL.md`, `.claude/skills/guide-audit/score_guide.py` |
+| agents | `.agents/skills/learn/SKILL.md`, `.agents/skills/guide-audit/SKILL.md`, `.agents/skills/guide-audit/score_guide.py`, `.agents/workflows/learn.md` |
+| both | 위 두 묶음 모두 |
+
+각 경로의 존재를 `ls` 또는 파일 읽기로 확인하고, 결과를 다음 형태로 출력한다:
+
+```
+스킬 설치 검증:
+  ✅ .claude/skills/learn/SKILL.md
+  ✅ .claude/skills/guide-audit/SKILL.md
+  ✅ .claude/skills/guide-audit/score_guide.py
+```
+
+**하나라도 누락이면 즉시 6단계의 해당 복사 작업을 다시 실행하고 재검증**한다. 누락된 채 마무리 안내로 넘어가지 않는다.
+
 생성된 파일 목록을 보여주고 다음을 사용자에게 안내한다.
 
 **Both 모드일 때만**:
