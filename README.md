@@ -286,8 +286,8 @@ Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $env:TEMP\api, "$env:U
 3. 기존 파일 충돌 검사 (있으면 사용자 확인 후 백업 또는 덮어쓰기)
 4. 영역 자동 탐지 (`apps/`, `frontend`, `backend`, `database`, ...) → 사용자 검토
 5. 영역별 가이드 초안 작성 (8섹션 + 미션/Tradeoff 자리) → 사용자 승인
-6. 파일 생성 (root map + 영역 가이드 + `learn` 스킬). Both 모드면 `CLAUDE.md`는 `@./AGENTS.md` 한 줄짜리 import 파일로 생성
-7. 마무리 안내 + `/guide-audit`로 채점 권장
+6. 파일 생성 (root map + 영역 가이드 + `learn` 스킬 + `guide-audit` 스킬). Both 모드면 `CLAUDE.md`는 `@./AGENTS.md` 한 줄짜리 import 파일로 생성
+7. 스킬 설치 자가 검증(`learn`/`guide-audit` 경로 존재 확인, 누락 시 6단계 재실행) → 마무리 안내 + `/guide-audit`로 채점 권장
 
 <br/><br/>
 
