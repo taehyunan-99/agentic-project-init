@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""guide-audit 러너 — CLAUDE.md/AGENTS.md 품질 채점 (v1.2 루브릭)
+"""guide-audit 러너 — CLAUDE.md/AGENTS.md 품질 채점
 
 표준 라이브러리만 사용. rubric-schema.json을 외부에서 읽어 채점.
 
@@ -45,7 +45,7 @@ class FileResult:
     category_scores: dict[str, dict] = field(default_factory=dict)
     item_evidence: list[dict] = field(default_factory=list)
     anti_pattern_hits: list[dict] = field(default_factory=list)
-    import_redirect_to: str | None = None  # v1.4: @import 한 줄 파일이면 대상 경로
+    import_redirect_to: str | None = None  # @import 한 줄 파일이면 대상 경로
 
     def to_dict(self) -> dict:
         return {
@@ -165,7 +165,7 @@ def strip_html_comments(text: str) -> str:
 def is_import_redirect(text: str) -> str | None:
     """파일 본문이 단일 `@<상대경로>.md` import 한 줄이면 그 경로를 반환.
 
-    HTML 주석과 빈 줄은 무시한다. v1.4부터 도구가 both 모드의
+    HTML 주석과 빈 줄은 무시한다. both 모드의
     `CLAUDE.md = @./AGENTS.md` 구조를 알아채기 위해 사용.
 
     예시 인정 패턴:
@@ -380,11 +380,11 @@ def score_D2(text: str, item: dict, file_path: Path) -> tuple[float, str]:
 
 
 def score_D2_prime(text: str, item: dict) -> tuple[float, str]:
-    """area_guide용 — 8섹션 매칭 (v1.3: 영어/한국어 aliases 지원)
+    """area_guide용 — 8섹션 매칭 (영어/한국어 aliases 지원)
 
     스키마의 `required_sections`는 다음 두 포맷 모두 받는다:
-    1. v1.2 이하: ["WHAT", "CONTENTS", ...]   (문자열 리스트)
-    2. v1.3+: [{"canonical": "WHAT", "aliases": ["WHAT", "역할", ...]}, ...]
+    1. 문자열 리스트: ["WHAT", "CONTENTS", ...]
+    2. aliases 객체: [{"canonical": "WHAT", "aliases": ["WHAT", "역할", ...]}, ...]
     """
     required = item["detection"]["required_sections"]
     headings = re.findall(r"^#+\s+(.+?)\s*$", text, re.MULTILINE)
@@ -538,9 +538,9 @@ def score_H3(file_path: Path) -> tuple[float, str]:
 
 # Anti-patterns
 def detect_anti_patterns(text: str, schema: dict) -> tuple[float, list[dict]]:
-    """v1.5: 두 가지 detection 타입 지원
-    - regex_count (구): regex_patterns flat list + 단일 trigger_threshold
-    - regex_count_grouped (신): groups[].regex_patterns + 그룹별 trigger_threshold,
+    """두 가지 detection 타입 지원
+    - regex_count: regex_patterns flat list + 단일 trigger_threshold
+    - regex_count_grouped: groups[].regex_patterns + 그룹별 trigger_threshold,
       한 그룹이라도 임계를 넘으면 페널티 적용 (그룹별 매칭 카운트도 함께 기록)
     """
     visible = strip_html_comments(text)
@@ -616,11 +616,11 @@ def score_tree(root: Path, files: list[Path], schema: dict) -> TreeResult:
                 broken_links.append(f"{f.relative_to(root)} → {link}")
 
     # T3: 규칙 중복 — 가이드들의 bullet을 normalize → 0.85+ 유사도
-    # v1.3: 같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍은 sync_group으로 묶고,
-    #       같은 그룹 내 bullet 중복은 카운트하지 않는다.
-    # v1.8: placeholder 안내문(예: "_(아직 없음)_", "채워주세요" 류)은 진짜 규칙이 아니므로
-    #       T3 dedup에서 사전 제외. 템플릿이 의도적으로 여러 영역에 두는 안내문이 안티패턴으로
-    #       오인되지 않도록 보호.
+    # 같은 디렉토리의 CLAUDE.md ↔ AGENTS.md 쌍은 sync_group으로 묶고,
+    # 같은 그룹 내 bullet 중복은 카운트하지 않는다.
+    # placeholder 안내문(예: "_(아직 없음)_", "채워주세요" 류)은 진짜 규칙이 아니므로
+    # T3 dedup에서 사전 제외. 템플릿이 의도적으로 여러 영역에 두는 안내문이 안티패턴으로
+    # 오인되지 않도록 보호.
     placeholder_markers = [
         "아직 없음",
         "채워주세요",
@@ -647,7 +647,7 @@ def score_tree(root: Path, files: list[Path], schema: dict) -> TreeResult:
         for b in bullets:
             norm = re.sub(r"\s+", " ", b.lower()).strip()
             norm = re.sub(r"[`*_]", "", norm)
-            # v1.8: placeholder 안내문 제외
+            # placeholder 안내문 제외
             if any(marker in norm for marker in placeholder_markers):
                 continue
             all_bullets.append((str(f.relative_to(root)), sync_group, norm))
@@ -830,7 +830,7 @@ def score_project(root: Path, schema: dict) -> ProjectResult:
             top_recommendations=["가이드 파일이 없습니다. `/agentic-project-init`로 먼저 생성하세요."],
         )
 
-    # v1.4: redirect 파일을 사전 분류하여 본문 파일만 정상 채점,
+    # redirect 파일을 사전 분류하여 본문 파일만 정상 채점,
     # redirect 파일은 본문 파일의 점수를 차용한다.
     redirect_map: dict[Path, Path] = {}  # redirect_path → target_path
     body_guides: list[Path] = []
@@ -879,7 +879,7 @@ def score_project(root: Path, schema: dict) -> ProjectResult:
 
     tree = score_tree(root, guides, schema)
 
-    # v1.4: 가중 평균은 본문 파일만 카운트 (redirect는 중복 카운트 방지)
+    # 가중 평균은 본문 파일만 카운트 (redirect는 중복 카운트 방지)
     body_for_avg = [fr for fr in file_results if fr.import_redirect_to is None]
     type_weights = {1: 2, 2: 1, 3: 1}
     weighted_sum = sum(fr.file_score * type_weights[fr.type_code] for fr in body_for_avg)
@@ -903,7 +903,7 @@ def score_project(root: Path, schema: dict) -> ProjectResult:
 
 def generate_recommendations(files: list[FileResult], tree: TreeResult) -> list[str]:
     recs: list[tuple[float, str]] = []
-    # v1.4: redirect 파일은 본문과 중복 추천 방지를 위해 제외
+    # redirect 파일은 본문과 중복 추천 방지를 위해 제외
     for fr in files:
         if fr.import_redirect_to is not None:
             continue
@@ -1004,7 +1004,7 @@ def print_text_report(result: ProjectResult, single_file: bool = False) -> None:
 # ────────────────────────────────────────────────────────────
 
 def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(description="guide-audit 러너 (v1.2 루브릭)")
+    parser = argparse.ArgumentParser(description="guide-audit 러너")
     g = parser.add_mutually_exclusive_group(required=True)
     g.add_argument("--project", type=str, help="프로젝트 루트 디렉토리")
     g.add_argument("--file", type=str, help="단일 가이드 파일 (.md)")
@@ -1031,7 +1031,7 @@ def main(argv: list[str]) -> int:
         except Exception:
             root = path.parent
         schema = load_schema(root)
-        # v1.4: redirect 파일을 단독 채점하면 0점이 나오므로 대상 파일을 대신 채점
+        # redirect 파일을 단독 채점하면 0점이 나오므로 대상 파일을 대신 채점
         redirect = is_import_redirect(path.read_text(encoding="utf-8", errors="ignore"))
         if redirect:
             target = (path.parent / redirect).resolve()
