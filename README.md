@@ -127,7 +127,7 @@ README에 "이 디렉토리는 X 모듈입니다" 정도만 적혀 있으면 에
 
 이 구조는 두 가지를 동시에 노립니다 — **토큰 사용량 감소**(영역이 많을수록 작업당 로드되는 컨텍스트 격차가 커짐)와 **잘못된 가정 빈도 감소**(영역 격리로 다른 영역의 룰이 현재 영역에 잘못 적용되는 일이 줄어듦).
 
-아래는 한 프로젝트(7영역)에 적용해 측정한 *실측값*입니다. **v1**은 단일 root README만 있는 상태, **v2**는 이 스킬을 적용해 root map + 7개 영역 가이드 + `/learn` 명령(총 9개 파일)을 추가한 상태입니다.
+아래는 한 프로젝트(7영역)에 적용해 측정한 *실측값*입니다. **v1**은 단일 root README만 있는 상태, **v2**는 이 스킬을 적용해 root map + 7개 영역 가이드 + 부속 스킬을 추가한 상태입니다.
 
 > ⚠️ 영역 수·작업 종류·codebase 크기에 따라 효과는 달라질 수 있습니다.
 
@@ -270,9 +270,9 @@ Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $env:TEMP\api, "$env:U
 
 | 인자 | 본문 파일 | 호환 파일 |
 |------|-----------|-----------|
-| `claude` | `CLAUDE.md` + `.claude/skills/learn/SKILL.md` | — |
-| `agents` | `AGENTS.md` + `.agents/skills/learn/SKILL.md` + `.agents/workflows/learn.md` | — |
-| `both` | `AGENTS.md` (모든 위치) + `.claude/skills/learn/` + `.agents/skills/learn/` + `.agents/workflows/learn.md` | `CLAUDE.md` = `@./AGENTS.md` 한 줄 |
+| `claude` | `CLAUDE.md` + `.claude/skills/` (부속 스킬) | — |
+| `agents` | `AGENTS.md` + `.agents/skills/` (부속 스킬) + `.agents/workflows/` | — |
+| `both` | `AGENTS.md` (모든 위치) + `.claude/skills/` + `.agents/skills/` + `.agents/workflows/` | `CLAUDE.md` = `@./AGENTS.md` 한 줄 |
 | (없음) | 위 3개 중 어느 환경인지 사용자에게 묻고 대기합니다 | — |
 
 `both` 모드는 본문을 `AGENTS.md` 한 파일에만 둡니다. Claude Code는 `CLAUDE.md`의 `@./AGENTS.md` import를 자동 따라가 같은 본문을 봅니다. 단일 파일만 편집하므로 sync drift가 구조적으로 불가능합니다.
