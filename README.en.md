@@ -10,14 +10,11 @@ A skill that automatically initializes a project structure optimized for agentic
 
 ## TL;DR
 
-- Keep **only a map** at the root; per-area guides live **inside their own area folders**.
-- The agent loads only the guide for the area it is working on → **saves context tokens**.
+- Keep **only a map** at the root; per-area guides live **inside their own area folders** → only the active area loads, **saving context tokens**.
 - Pitfalls and background that can't be inferred from code alone are made explicit via an **8-section template (WHAT / CONTENTS / HOW / HOW NOT / WHERE / WHY / COMMANDS / LEARNED CAUTIONS)**.
-- init produces a **lightweight skeleton only** (WHAT/CONTENTS/WHERE/COMMANDS). The judgement and tacit-knowledge sections are filled in later via the **`/update` interview** once a baseline is in place.
-- Each guide opens with a **one-sentence mission** and a **Tradeoff comment block** so the LLM grasps the rule's intent and cost together.
-- LEARNED CAUTIONS lives in a **separate file (`LEARNED_CAUTIONS.md`)**, decoupled from the main guide. `/learn` appends one line at a time; the main guide is never touched.
-- `/update --restructure` reshapes area boundaries when needed (file moves + guide reshuffling, all behind user confirmation).
-- The `/guide-audit` command scores every guide in the project against a deterministic rubric.
+- Each guide opens with a **first-line mission + Tradeoff** so the LLM grasps the rule's intent and cost together.
+- Three-step workflow: **`init` (lightweight skeleton)** → **`/learn` (accumulate cautions)** → **`/update` (fill guides via interview)**.
+- The `/guide-audit` command scores every guide against a deterministic rubric.
 
 <br/><br/>
 
@@ -62,20 +59,16 @@ The gap widens for larger projects. The agent reads the root map first and loads
 
 Every area guide uses the same 8-section structure:
 
-1. **WHAT** — what this module does *(filled by init)*
-2. **CONTENTS** — files/directories and tech stack *(filled by init)*
-3. **HOW** — how to make ordinary changes *(filled by the `/update` interview)*
-4. **⛔ HOW NOT** — non-obvious pitfalls that break the system (a one-line reason is required) *(filled by the `/update` interview)*
-5. **WHERE** — dependencies on other modules *(filled by init)*
-6. **WHY** — background knowledge not written in the code *(filled by the `/update` interview)*
-7. **COMMANDS** — build/test/lint commands + area-specific command guards *(init covers build/test only; guards come from `/update`)*
-8. **⚠️ LEARNED CAUTIONS** — split out into `LEARNED_CAUTIONS.md`; the `learn` skill accumulates entries there.
+1. **WHAT** — what this module does
+2. **CONTENTS** — files/directories and tech stack
+3. **HOW** — how to make ordinary changes
+4. **⛔ HOW NOT** — non-obvious pitfalls that break the system (a one-line reason is required)
+5. **WHERE** — dependencies on other modules
+6. **WHY** — background knowledge not written in the code
+7. **COMMANDS** — build/test/lint + area-specific command guards
+8. **⚠️ LEARNED CAUTIONS** — split out into `LEARNED_CAUTIONS.md`
 
-In particular, 4 (HOW NOT) and 6 (WHY) are the slots that explicitly hold **knowledge only humans can know**, and 7 (COMMANDS) is a guard that stops the LLM from guessing commands.
-
-The slots `/update` is expected to fill are left as placeholders by init; the substantive writing begins around the baseline-completion milestone. These are areas where code-only inference would only add noise, so they are only filled through user decisions.
-
-Authoring guidance meant for humans is isolated in HTML comments, so it costs 0 tokens on automatic load.
+Sections 4 (HOW NOT) and 6 (WHY) are the slots that explicitly hold **knowledge only humans can know**. Since code-only inference would only add noise there, init fills **only 1·2·5·7**, while **3·4·6 are filled by the `/update` interview through user decisions**. Authoring guidance meant for humans is isolated in HTML comments, so it costs 0 tokens on automatic load.
 
 <br/>
 
@@ -104,43 +97,23 @@ When a mistake arises from a wrong assumption during work:
 /learn Forgot to bump the alembic version during DB migration → missing column in staging
 ```
 
-A single line is appended to that area folder's `LEARNED_CAUTIONS.md`. The main guide's section 8 references this file via `@./LEARNED_CAUTIONS.md`, so it loads automatically — and `learn` never touches the main guide. User-authored content and accumulated entries no longer share a file, which keeps the preservation rules crisp.
-
-From the next session on, the agent won't repeat the same mistake.
+A single line is appended to that area folder's `LEARNED_CAUTIONS.md`, which the main guide auto-imports. From the next session on, the agent won't repeat the same mistake.
 
 <br/>
 
 ### 5. /update interview = grow the guide alongside the code
 
-Once a baseline is in place, running `/update` walks through each area with the user via 9 question types:
+Once a baseline is in place, running `/update` walks each area through **9 question types** (change facts, conventions, anti-patterns, tacit knowledge, drift, etc.). Every proposal carries a **one-line rationale** (commit ID, file location), so even unfamiliar areas remain decidable.
 
-1. Change-fact confirmation (file/endpoint additions/removals)
-2. Deletion / move confirmation
-3. External dependency shifts
-4. Convention agreement (when mixed patterns appear)
-5. Anti-pattern prediction (HOW NOT candidates)
-6. Tacit-knowledge extraction (reasons behind unusual choices)
-7. Drift detection (existing HOW vs. actual code)
-8. New LEARNED CAUTIONS candidates (e.g., fix clusters)
-9. Area boundary review (advisory only — decisions go to `/update --restructure`)
+After the interviews, the skill checks for **6 cross-area conflicts** (convention contradiction / WHERE duplication / HOW NOT vs HOW / terminology / dependency direction / COMMANDS). If any conflict is left unresolved, the update is marked **incomplete** and the next run re-asks that conflict first.
 
-Every proposal carries a **one-line rationale** (commit ID, file location, occurrence count) so even unfamiliar areas remain decidable. After the per-area interviews, the skill checks for 6 kinds of cross-area conflicts (convention contradiction / WHERE duplication / HOW NOT vs HOW / terminology mismatch / dependency direction / COMMANDS divergence). **If even one conflict is left unresolved, the update itself is marked incomplete** and the next `/update` re-asks about that conflict first.
+For boundary changes, use `/update --restructure <area>` to redraw the area itself (one at a time, zero file moves before user approval).
 
-**User decisions are never auto-overwritten.** Any change requires explicit confirmation, and previous decisions are preserved as change-history comments.
+**User decisions are never auto-overwritten** — any change requires explicit confirmation, with previous decisions preserved as change-history comments.
 
 <br/>
 
-### 6. /update --restructure = reshaping area boundaries
-
-When an area grows oversized or responsibilities blur, `/update --restructure <area>` lets you redraw the area itself.
-
-- Extract responsibility categories → propose split/merge options → file-move plan → **transfer LEARNED_CAUTIONS entries (per-item user decision)** → reshuffle the 8-section main guide → rewire external strong-coupling `@import`s → step-by-step verification.
-- One area at a time, no automatic commits, zero file moves before user approval.
-- LEARNED_CAUTIONS entries accumulated by the user are never auto-classified by AI — each item's destination is decided by the user.
-
-<br/>
-
-### 7. /guide-audit deterministic scoring = quality regression prevention
+### 6. /guide-audit deterministic scoring = quality regression prevention
 
 The `/guide-audit` command scores every guide in the project against a 100-point rubric. It is pattern-matching based, so the same input → the same score.
 
@@ -152,7 +125,7 @@ Scoring results are printed only to the console and do not modify guide files (r
 
 <br/>
 
-### 8. Multi-agent collaboration
+### 7. Multi-agent collaboration
 
 Even when teammates use different agents (Claude Code, Codex, etc.) in one project, they see the same guides.
 
@@ -219,8 +192,7 @@ Each path follows the official docs ([Claude Code](https://code.claude.com/docs/
 | Claude Code / Cursor / Antigravity | `/learn` (or `/learn <note>`) |
 | Codex | `$learn` (or `$learn <note>`) |
 
-→ Codex uses a `$` prefix for custom invocations, so it differs from the other agents. Otherwise the behavior is identical.
-The append target is **a single `LEARNED_CAUTIONS.md` in the current area folder**; the main guide is never touched.
+→ Codex uses a `$` prefix. The append target is the current area's `LEARNED_CAUTIONS.md`; the main guide is never touched.
 
 <br/>
 
@@ -232,15 +204,7 @@ The append target is **a single `LEARNED_CAUTIONS.md` in the current area folder
 | `/update <area path>` | Updates only the specified area |
 | `/update --restructure [area]` | Separate flow for area-boundary reshaping (file moves + guide reshuffling + LEARNED entry transfer) |
 
-→ In Codex it is `$update`. **When to run it**:
-
-- Right after baseline completion — start filling the guides in earnest
-- After major feature additions — decide whether a new pattern becomes the convention
-- After a bug fix cluster — pin recurring mistakes into `LEARNED_CAUTIONS.md`
-- After external dependency swaps — refresh HOW/COMMANDS
-- Right before onboarding/release — keep the guides current
-
-Recommended cadence: monthly or whenever the signals above appear. Avoid running it mid-refactor — run it after the refactor lands.
+→ In Codex it is `$update`. Run it first right after baseline completion, then monthly — or whenever a major feature lands, a bug-fix cluster appears, a dependency is swapped, or you're cutting a release. (Avoid mid-refactor; run after it lands.)
 
 <br/>
 
@@ -371,17 +335,15 @@ Generate with `both` mode. `AGENTS.md` becomes the single source of truth and `C
 
 **Q. How does `/learn` work?**
 
-It infers the current work area and appends one line to that area folder's `LEARNED_CAUTIONS.md`. The main guide (`AGENTS.md` / `CLAUDE.md`) is never modified — section 8 of the main guide references `@./LEARNED_CAUTIONS.md`, so it loads automatically. If the area is ambiguous, it asks the user.
-
-The invocation differs per agent — Claude Code/Cursor/Antigravity use `/learn`, Codex uses `$learn`. Invoked without args, it auto-extracts the wrong assumption from the recent conversation.
+It appends one line to the current area's `LEARNED_CAUTIONS.md` (the main guide is never modified). If the area is ambiguous, it asks. Invoked without args, it auto-extracts the wrong assumption from the recent conversation.
 
 **Q. When should I run `/update`?**
 
-Since init only creates a lightweight skeleton, the first run is around the baseline-completion milestone, when patterns have settled. After that, run it whenever a major feature lands, an external dependency is swapped, a bug-fix cluster appears, or you're about to onboard someone / cut a release. The interview groups questions per area and tags each proposal with concrete evidence (commit IDs, file locations) so unfamiliar areas remain decidable. User decisions are never auto-overwritten, and if any cross-area conflict is left unresolved the update is marked incomplete.
+First run around baseline completion, then whenever a major feature lands, an external dependency is swapped, a bug-fix cluster appears, or you're cutting a release. Every proposal carries a one-line rationale (commit IDs, file locations), user decisions are never auto-overwritten, and any unresolved cross-area conflict marks the update incomplete.
 
 **Q. What's different about `/update --restructure`?**
 
-Plain `/update` only edits guide content; `--restructure` reshapes the areas themselves — splitting, merging, renaming, or removing them. It covers file moves, guide reshuffling, `LEARNED_CAUTIONS` entry transfer, and rewiring external strong-coupling `@import`s, but every step is gated on user confirmation. It handles one area at a time, with no automatic commits — review via `git diff` and commit yourself.
+Plain `/update` only edits guide content; `--restructure` reshapes the areas themselves — splitting, merging, or renaming them. It covers file moves, guide reshuffling, and `LEARNED_CAUTIONS` entry transfer, all gated on user confirmation, one area at a time.
 
 **Q. Does `/guide-audit` modify guides?**
 
