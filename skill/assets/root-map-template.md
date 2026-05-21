@@ -45,16 +45,20 @@ root에 모든 가이드를 몰아넣지 않고 영역별로 분리한 이유는
 
 ## 영역 가이드의 구조
 
-<!-- 각 영역의 {GUIDE_FILENAME}은 다음 8섹션 템플릿을 따른다. -->
+<!--
+각 영역의 {GUIDE_FILENAME}은 다음 8섹션 템플릿을 따른다.
+init은 가벼운 뼈대만 만든다 — WHAT/CONTENTS/WHERE/COMMANDS(빌드·테스트·린트)는 코드 스캔 기반 초안,
+HOW/HOW NOT/WHY는 placeholder. 본격 작성은 베이스라인 완성 즈음 /update 인터뷰로 채운다.
+-->
 
-1. **WHAT** — 이 모듈이 무엇을 하는가
-2. **CONTENTS** — 디렉토리 맵 + 기술 스택
-3. **HOW** — 일반적인 수정은 어떻게 하는가
-4. **HOW NOT** — 시스템을 깨뜨리는 비명백한 함정
-5. **WHERE** — 다른 모듈과의 의존성
-6. **WHY** — 코드에 안 적힌 배경 지식
-7. **COMMANDS** — 빌드/테스트/린트 명령어
-8. **LEARNED CAUTIONS** — `learn` 스킬로 누적
+1. **WHAT** — 이 모듈이 무엇을 하는가 *(init에서 채움)*
+2. **CONTENTS** — 디렉토리 맵 + 기술 스택 *(init에서 채움)*
+3. **HOW** — 일반적인 수정은 어떻게 하는가 *(`/update` 인터뷰에서 채움)*
+4. **HOW NOT** — 시스템을 깨뜨리는 비명백한 함정 *(`/update` 인터뷰에서 채움)*
+5. **WHERE** — 다른 모듈과의 의존성 *(init에서 채움)*
+6. **WHY** — 코드에 안 적힌 배경 지식 *(`/update` 인터뷰에서 채움)*
+7. **COMMANDS** — 빌드/테스트/린트 + 영역 고유 명령어 가드 *(init은 빌드/테스트/린트만, 가드는 `/update`)*
+8. **LEARNED CAUTIONS** — 별도 파일 `LEARNED_CAUTIONS.md`에 분리. `learn` 스킬이 누적
 
 ## 공통 명령어
 
@@ -78,8 +82,10 @@ root에 모든 가이드를 몰아넣지 않고 영역별로 분리한 이유는
 ## 주의사항 학습 (learn 스킬)
 
 <!--
-작업 중 실수가 발견되면 다음 형태로 호출해 해당 영역 {GUIDE_FILENAME}의
-"⚠️ LEARNED CAUTIONS" 섹션에 누적한다.
+작업 중 실수가 발견되면 다음 형태로 호출해 해당 영역 폴더의
+LEARNED_CAUTIONS.md에 누적한다.
+본문 가이드({GUIDE_FILENAME})는 8번 섹션에서 @./LEARNED_CAUTIONS.md를 참조하므로 자동 로드된다.
+learn 스킬은 LEARNED_CAUTIONS.md만 갱신하고 본문 가이드는 절대 건드리지 않는다.
 -->
 
 - Claude Code/Cursor/Antigravity: `/learn <메모>` (인자 없이도 호출 가능)

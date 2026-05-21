@@ -277,14 +277,35 @@ def score_A3(text: str, item: dict) -> tuple[float, str]:
     return 0.0, "WHY 섹션 비어있거나 placeholder만"
 
 
-def score_A4(text: str, item: dict) -> tuple[float, str]:
+def score_A4(text: str, item: dict, file_path: Path) -> tuple[float, str]:
     section_kw = item["detection"]["section_keywords"]
     body = section_body(text, section_kw)
     if not body:
         return 0.0, "LEARNED CAUTIONS 섹션 없음"
-    dated_items = re.findall(item["detection"]["item_pattern"], body, re.MULTILINE)
-    if dated_items:
-        return 5.0, f"누적 항목 {len(dated_items)}개"
+
+    item_pattern = item["detection"]["item_pattern"]
+    inline_items = re.findall(item_pattern, body, re.MULTILINE)
+
+    # 새 구조: 본문 LEARNED CAUTIONS 섹션이 @./LEARNED_CAUTIONS.md 를 참조하면
+    # 같은 폴더의 별도 파일에서 누적 항목을 함께 카운트한다.
+    external_file = file_path.parent / "LEARNED_CAUTIONS.md"
+    references_external = bool(re.search(r"@\./LEARNED_CAUTIONS\.md", body)) and external_file.exists()
+    external_items: list = []
+    if references_external:
+        external_text = external_file.read_text(encoding="utf-8", errors="ignore")
+        external_items = re.findall(item_pattern, external_text, re.MULTILINE)
+
+    total_items = len(inline_items) + len(external_items)
+    if total_items >= 1:
+        if references_external:
+            return 5.0, (
+                f"누적 항목 {total_items}개 "
+                f"(본문 {len(inline_items)} + LEARNED_CAUTIONS.md {len(external_items)})"
+            )
+        return 5.0, f"누적 항목 {total_items}개"
+
+    if references_external:
+        return 2.0, "LEARNED_CAUTIONS.md 분리 구조 — 별도 파일이 placeholder 상태"
     return 2.0, "섹션은 있으나 누적 항목 없음 (placeholder 상태)"
 
 
@@ -722,7 +743,7 @@ def score_file(path: Path, root: Path, schema: dict, type_code: int | None = Non
                 elif iid == "A3":
                     score, evidence = score_A3(text, it)
                 elif iid == "A4":
-                    score, evidence = score_A4(text, it)
+                    score, evidence = score_A4(text, it, path)
                 elif iid == "B1":
                     score, evidence = score_B1(text, it)
                 elif iid == "B2":

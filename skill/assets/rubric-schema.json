@@ -105,7 +105,8 @@
               {"condition": "section_exists AND dated_item_count >= 1", "points": 5},
               {"condition": "section_exists AND (dated_item_count == 0 OR placeholder_only)", "points": 2},
               {"condition": "default", "points": 0}
-            ]
+            ],
+            "note": "본문 8번 섹션이 @./LEARNED_CAUTIONS.md를 참조하면 같은 폴더의 별도 파일에서 누적 항목을 함께 카운트한다 (분리 구조 호환). 본문 inline 항목 + 별도 파일 항목의 합산으로 만점 판정."
           }
         }
       ]
